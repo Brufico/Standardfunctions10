@@ -11,10 +11,11 @@
 #'    number_sections: yes
 #'    toc: yes
 #'    theme: readable
-#'    css: customex2.css
+#'    #css: customex2.css
 #'  word_document: default
 #'  pdf_document:
 #'    toc: yes
+#'    number_sections: yes
 #'---
 
 #'
