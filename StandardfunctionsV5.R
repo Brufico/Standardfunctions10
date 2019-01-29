@@ -23,7 +23,7 @@
 
 #+ init, include=FALSE
 library(knitr)
-# opts_chunk$set(results="hide")
+opts_chunk$set(results="hold")
 
 library(ggplot2)
 library(dplyr)
