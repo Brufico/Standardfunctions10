@@ -7,12 +7,12 @@
 #'      This is the code, presented as a notebook.
 #'      It should help readability.
 #'output:
-#'  html_document:
-#'    number_sections: yes
-#'    toc: yes
-#'    theme: readable
+#'  #html_document:
+#'    #number_sections: yes
+#'    #toc: yes
+#'    #theme: readable
 #'    #css: customex2.css
-#'  word_document: default
+#'  #word_document: default
 #'  pdf_document:
 #'    toc: yes
 #'    number_sections: yes
@@ -23,7 +23,7 @@
 
 #+ init, include=FALSE
 library(knitr)
-# opts_chunk$set(results="hide")
+opts_chunk$set(results="hold")
 
 library(ggplot2)
 library(dplyr)
