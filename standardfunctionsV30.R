@@ -1232,7 +1232,7 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
 num1d <- function(dataf, nomvar, useNA ="no",
                   digits = sfdefault("digits"), sumdigits = sfdefault("sumdigits"),
                   rfreq = TRUE, width = sfdefault("discretebarwidth", 0.5), 
-                  cfill = "steelblue", rel_heights = c(3, 1)) {
+                  cfill = "steelblue", rel_heights = c(2, 1)) {
         # make a table (with Frequency = nb of rows)
         tb <- table(dataf[[nomvar]])
         num <- sum(tb)
@@ -1379,84 +1379,12 @@ comlimsbarbox <- function(barp, boxp, safemargin = 0.05){
 
 
 
-# num1c (old)
-# num1c <- function(dataf, nomvar, usedensity = FALSE, plot_density = FALSE,
-#                   fillhist = sfdefault("filldefault"), color_density = "red", digits = 2, # ? modifier
-#                   bins = nclass.FD, closed = NULL, ...) {  # ... = addtl arguments for geom_hist
-#         if (plot_density) {usedensity <- TRUE} # plot_density overrides usedensity
-#         # bins = Null, integer, or a function name : "nclass.Sturges", "nclass.FD" , "nclass.scott"
-#         # get or compute bins (as integer)
-#         if (!is.null(bins)) {
-#                 if ("character" %in% class(bins) ) {
-#                         bins <-  do.call(bins, list(nonavect(dataf[[nomvar]])))
-#                 } else {bins <- NULL
-#                 warning("bins is not a function", call. = TRUE)}
-#         }
-#         # make histogram
-#         p <- ggplot(dataf, aes_(as.name(nomvar))) +
-#                 if (usedensity) {geom_histogram(aes(y=..density..),
-#                                                 bins = bins, fill = fillhist,...)
-#                 } else {geom_histogram(bins = bins, fill = fillhist, ...)}
-# 
-#         if (plot_density) {p <- p + geom_density(color=color_density) }
-#         
-#         # make boxplot
-#         boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + geom_boxplot() + coord_flip()
-# 
-#         # make summaries vector + get number of cases
-#         s = sumvector(dataf[[nomvar]])
-#         num = s["n"] # number of cases
-# 
-#         # get the frequency table from ggplot
-#         tb <- ggplot_build(p)$data[[1]][ , 1:8]
-#         # add  columns to it
-#         tb$rfreq <- tb$count/num
-#         tb$numlabs <-  paste0("n=", tb$count)
-#         tb$perclabs <- paste0(100* round(tb$rfreq, digits), "%")
-#         tb$index <- ave(1:nrow(tb),  FUN = function(x) 1:length(x)) # rank
-#         # done, compute more info
-#         cbinw <- unique(round(tb$xmax-tb$xmin,digits)) # get binwidth
-#         cbreaks <- with(tb, c(xmin[1],xmax)) # get breaks vector from table
-#         clabs <- mkclabs(cbreaks, closed = closed) # make class lablels
-#         # make a printable table
-#         ptb <- data.frame(
-#                 class = clabs,
-#                 center = tb$x,
-#                 freq = tb$count,
-#                 rfreq = tb$rfreq * 100
-#         )
-# 
-#         # Uniform Chi2 test
-#         uchisq <- try.chisq.test(tb$count)
-#         # warn if different class widths
-#         if (length(cbinw) >= 2) {
-#                 warning(paste0("Unif chi2 test ",
-#                                nomvar,
-#                                " called with different class widths!",
-#                                call. = TRUE)) }
-# 
-#         # return values
-#         make.result( name = makeresname(nomvar, "num1c"), #modifié
-#                      funname = num1c,
-#                      varnames = c(nomvar = nomvar),
-#                      numcases = num,
-#                      summaries = s,
-#                      table = tb,
-#                      ptable = ptb,
-#                      details =list(binwidths = cbinw,
-#                                    breaks = cbreaks,
-#                                    closed = closed),
-#                      chi2 = uchisq,
-#                      plot = p,
-#                      plot1 = boxp)
-# }
-
 
 # num1c(new)
 num1c <- function(dataf, nomvar, usedensity = FALSE, plot_density = FALSE,
                   fillhist = sfdefault("filldefault"), color_density = "red", digits = 2, # ? modifier
                   bins = "nclass.FD", closed = "left",
-                  rel_heights = c(3, 1), safemargin = 0.05,
+                  rel_heights = c(2, 1), safemargin = 0.05,
                   ...) {  # ... = addtl arguments for geom_hist
         if (plot_density) {usedensity <- TRUE} # plot_density overrides usedensity
         # bins = Null, integer, or a function name : "nclass.Sturges", "nclass.FD" , "nclass.scott"
@@ -1926,9 +1854,10 @@ play_num1d <-  function(res, hastitle = TRUE, custom = FALSE,
         cat(pander(res$summaries))
         newline()
         # displaygraph(multiplot(res$plot, res$plot1, cols = 1))
-        displaygraph(multiplot(res$plot + scale_x_continuous(name = NULL), 
-                               res$plot1 + scale_x_continuous(name = " ", breaks = 1, labels = "bx"),  
-                               layout = matrix(c(1, 1, 1, 2), ncol =  1)))
+        # displaygraph(multiplot(res$plot + scale_x_continuous(name = NULL), 
+        #                        res$plot1 + scale_x_continuous(name = " ", breaks = 1, labels = "bx"),  
+        #                        layout = matrix(c(1, 1, 1, 2), ncol =  1)))
+        displaygraph(res$plot) 
         newline()
 }
 
