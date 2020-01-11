@@ -1,0 +1,2069 @@
+#'---
+#'title: "Standard Functions for Basic Statistical Analysis"
+#'subtitle: R code in standardfunctions V40.R
+#'author: "Bruno Fischer Colonimos"
+#'date: "16 mars 2017 ===> 27 décembre 2019"
+#'abstract: |
+#'      This is the code of the standard functions v40.
+#'       Modifications: 
+#'       
+#'       * mocat1 modifiée (27 décembre 2019)
+#'      
+#'output:
+#'  html_document:
+#'    number_sections: yes
+#'    toc: yes
+#'    theme: readable
+#'  pdf_document:
+#'    toc: yes
+#'    number_sections: true
+#'  word_document: default
+#'---
+
+#'----------------------------------------------
+
+
+#+ init, include=FALSE
+if (!require(knitr)) {install.packages("knitr")}
+library(knitr)
+# opts_chunk$set(results="hide")
+if (!require(ggplot2)) {install.packages("ggplot2")}
+library(ggplot2)
+if (!require(dplyr)) {install.packages("dplyr")}
+library(dplyr)
+#
+# if (!require(reshape2)) {install.packages("reshape2")}
+# library(reshape2)
+
+
+#' Constants and default options settings
+#' ======================================
+
+
+# sfinitdefaults sets some constants in the data structure and returns a
+# function that gets and sets global options
+
+sfinitdefaults <- function () {
+        # structure definition, with some constants already set up
+        defaultvalue <- list( #namesum
+                namesumeng = c("n", "Mean", "St.dev",
+                               "Min.", "1st Qu.","Median", "3rd Qu.",  "Max.",
+                               " NA's"),
+                namesumfrench  = c("n", "Moyenne", "Ecart-type",
+                                   "Min.", "Q1","Mediane", "Q3",  "Max.",
+                                   " NA's"),
+                namesum ="",
+                language = "",
+                filldefault = "steelblue")
+        # Info function
+        info <- function() {names(defaultvalue)}
+        # access function
+        function(name = NULL, value = NULL, setnull = FALSE){
+                if(is.null(name)) {
+                        warning("sfdefaults : You did not supply a name. Is it normal?",
+                                immediate. = TRUE, call. = TRUE)
+                        message(paste0( "Syntax sfdefault:\n",
+                                        "sfdefault() : displays syntax\n",
+                                        "sfdefautlt('?') : vector of defined  names\n",
+                                        "sfdefautlt('name') : value of 'name'\n",
+                                        "sfdefautlt('name', non_null_value) : set value of 'name'"))
+                } else if (name=="?") {
+                        info()
+                } else if (!is.null(value)) {
+                        defaultvalue[[name]] <<- value
+                        defaultvalue[[name]]
+                } else if (setnull == TRUE) {
+                        defaultvalue[[name]] <<- NULL
+                } else {defaultvalue[[name]]}
+
+        }
+}
+
+
+#' set up access function and some defaults
+
+#+ sfdefaults, results = "hide"
+
+# begin
+sfdefault <- sfinitdefaults()
+
+# language
+sfdefault("language","french")
+if(sfdefault("language") == "french") {
+        sfdefault("namesum", sfdefault("namesumfrench"))
+        sfdefault("percentlabel", sfdefault("pourcent"))
+} else {
+        sfdefault("namesum", sfdefault("namesumeng"))
+        sfdefault("percentlabel", sfdefault("percent"))
+}
+
+#' Programming default options
+#'
+
+#+ progoptions, results = "hide"
+sfdefault("reportNA", FALSE) # report number of NA's in a variable?
+sfdefault("orderfreq", TRUE) # Should we order the levels of a factor before graphing?
+
+#' display options
+
+#+ dispoptions, results = "hide"
+sfdefault("digits", 2)
+sfdefault("sumdigits" , 2)
+sfdefault("filldefault", "steelblue")
+sfdefault("colorannots1", "red")
+# max number of plots
+sfdefault("maxplots", 3)
+# options discrete charts
+sfdefault("cat1plots", c("pie", "bar")) # which plots to store for 1 cat var #c("bar", "pie")
+
+# options bar chart
+sfdefault("discretebarwidth", 0.5)
+
+# piechart options
+sfdefault("scaletitle" , "") # title for the legend of the pie
+sfdefault("dolabel" , TRUE) # label the slices with %
+sfdefault("minperc" , 5) # minimal % value for showing a lable
+sfdefault("labpos" , 1.15) # label position relative to the center (0=center, 1 = plot radius)
+
+# analysis names options
+sfdefault("varsep" , "_x_") # variable separator in names of analysis
+sfdefault("funsep" , "_f_") # function separator in names of analysis
+
+# verification
+# sfdefault("?")
+
+
+
+
+#' Structure for each set of statistical results
+#' =============================================
+
+
+# make a result list. unsupplied elements assigned default=NULL and not included in result list
+make.result <- function(name = NULL,
+                        caption = NULL,
+                        funname = NULL, # name of the function which produced the result
+                        varnames =NULL, # vector (or better = named vector) of variable names
+                        numcases = NULL, # number of non-NA cases
+                        summaries = NULL, # numerical summaries (quantitative variables)
+                        levels = NULL,
+                        levels2 = NULL,
+                        breaks = NULL,
+                        closed= NULL,
+                        tables = list(), # * named list of tables, including
+                                        # table # default tabl, 
+                                        # ptableL, # printable table
+                        details = NULL, # additional info (mostly in table form)
+                        tests = list(), # * list of tests objetcts including
+                                        #chi2,anova,
+                        plots =list() # * named list of plots, including
+                                        # plot, # default plot
+                        ) {
+        # get arg - values list
+        lenv <- as.list(environment())
+        # remove NULL values from list
+        if (length(which(sapply(lenv,is.null))) == 0) {
+                lenv
+        } else {
+                lenv[-(which(sapply(lenv,is.null), arr.ind=FALSE))]
+        }
+}
+
+# result elements retrieval: use result$name or result[[name]]
+
+
+
+#' Recording a collection of sets of statistical  results
+#' ======================================================
+
+#' 
+#' Initialization : create the recording structure and the accessor/modifier
+#' -------------------------------------------------------------------------
+#' 
+
+# function ==> oneres MODIFIEE: Ne marche plus
+initresult <- function() {
+        allresults <- list(.whatsit = "resultlist") # encapsulated list of results
+        # store or retrieve one result
+        oneres <- function(rname, rval) {
+                if (missing(rname)) {
+                        if (missing(rval)) {
+                                warning("result : neither result nor name")
+                        } else {
+                                # get the name from inside the object
+                                rname <- rval$na     
+                        }
+                }
+                
+                if (missing(rval)) {
+                        allresults[[rname]]
+                } else {
+                        allresults[[rname]] <<- rval
+                        rname
+                }
+                
+        }
+        allres <- function() {allresults}
+        list(oneres, allres)
+}
+
+
+# assigning the modifier and accessor function to 'result, and the list of result to allresults
+resultfuns <- initresult()
+result <- resultfuns[[1]]
+allres <- resultfuns[[2]]
+
+# get list of names from the list of results (finds and returns the "external" storage names)
+allresnames <- function() {
+        names(allres())[-1]
+}
+
+#'
+#' ### Usage:
+#'
+#' for each statistical function *funname* that returns a set of results, call:
+#' 
+#' * result(*codename*, funname (arguments...) ) to **store** the results set under the name *codename*.
+#' * result(*codename*) **retrieves and returns** the results set stored under the name *codename*
+#' * allresnames() returns a vector of names for stored results sets
+#' 
+
+
+#' Generating a unique name for an analysis
+#' ----------------------------------------
+
+# make a result/analysis name: vector of variable names + generating function name
+makeresname <- function(varnames, funname) {
+        if (length(varnames) > 1) {
+                varnames1 <- paste(varnames, collapse = sfdefault("varsep"))
+        } else {varnames1 <- varnames
+        }
+        paste0(varnames1, sfdefault("funsep"), funname ) 
+}
+
+
+# retrieve parts of analysis name
+
+#get the parts = vector of names + function name
+resnameparts <- function(resname) {
+        strsplit(resname, split = sfdefault("funsep"))[[1]]
+}
+
+# get the function name
+resnamefun <- function(resname){
+        resnameparts(resname)[2]
+}
+# get the vector of variable names
+resnamevars <- function(resname){
+        strsplit(resnameparts(resname)[1], sfdefault("varsep"))[[1]]
+}
+
+# tries
+# xxx <- makeresname("toto", "bobofun")
+# xxxx <- makeresname(c("toto", "tata", "titi"), "bobofun")
+# 
+# xxx
+# resnameparts(xxx)
+# resnamefun(xxx)
+# resnamevars(xxx)
+# 
+# xxxx
+# resnameparts(xxxx)
+# resnamefun(xxxx)
+# resnamevars(xxxx)
+
+
+# beware duplicate names !!! make function to avoid accidents (see "tries.R")
+
+
+
+
+
+
+
+
+
+
+#'
+#' Helper functions
+#'=======================================================
+#'
+
+#'
+#' General utility functions
+#' ------------------------------------------------
+#'
+
+#'assoc.op : associative operator function: apply a binary operator or function
+#'to a list of (many) arguments
+#'
+#'opname
+#'~ the operator/function name (string)
+#'
+#'listargs
+#'~ the list of arguments to apply the operator to
+#'
+#'returns: a single result (of any type)
+
+assoc.op <- function(opname, listargs) {
+        xfun <- function(listargs, res) {
+                if (length(listargs) == 0) {
+                        res
+                } else{
+                        xfun(listargs[-1],
+                             do.call(opname,
+                                     list(res,  listargs[[1]])))
+                }
+        }
+
+        if (length(listargs) > 0) {
+                xfun(listargs[-1], res = listargs[[1]])
+        } else {warning("argument listargs has lenth 0")
+                logical(0)
+        }
+}
+
+#' REM: This is likely not necessary. Check 'reduce'
+
+
+# identify a  warning
+is.warning <- function(x) {"warning" %in% class(x)}
+
+#'
+#' vlookup (as in Excel). each column may be described by its rank or its name
+#'
+vlookup <- function(value, searchtable, searchcol = 1, returncol= 2){
+        searchtable[match(value, searchtable[[searchcol]]), returncol]
+}
+
+
+#'
+#' Functions for filtering out NA's
+#' --------------------------------
+
+#'
+#'* from a dataframe/tbl
+#'
+#' ...
+#' ~ is a succession of variable names which we want to filter out the NAs
+#' from ( ex: nonadf(dataframe, "age", "revenue"))
+#'
+nonadf <- function(dataf, ..., useNA = "no") {
+        lvar = list(...)
+        lseq = seq_along(lvar)
+        if (useNA == "no") {
+                # make list of logical vectors
+                llogicals <- lapply(
+                        X = lvar,
+                        FUN = function(nomvar) {
+                                !is.na(dataf[[nomvar]])
+                        }
+                )
+                # combine all with 'and' operator (&)
+                andlogicals <- assoc.op("&", llogicals)
+                dataf[which(andlogicals),]
+        } else {
+                dataf
+        }
+}
+
+#'
+#'* from a vector
+#'
+nonavect <- function(vect) {vect[which(!is.na(vect))]}
+
+
+
+
+#' Simple and multiple summary tables
+#' ------------------------------------------------
+# (nb of cases, mean, stdev, five-number-summary, optionally nb of NA's)
+
+#' vector of summaries for 1 quant variable
+sumvector <- function (x, extent = "long",
+                       dnames = sfdefault("namesum"),
+                       reportNA = sfdefault("reportNA")) {
+        if (length(x) == 0) {
+                sapply(numeric(length = 9), function(x) NA)
+        }else {# construct a more complete summary vector
+                s <- summary(x)
+                if (length(s) < 7) {s <- c(s, rep(0, times=7-length(s)))}
+                ret <- numeric(3)
+                ret[1] <- sum(!is.na(x))
+                ret[2] <-  s["Mean"]
+                ret[3] <- sd(x, na.rm = TRUE)
+                s <- c(ret, s[-4])
+                names(s) <- dnames
+                res <- if (reportNA) {s} else {s[1:(length(s) - 1)] }
+				res <- if (extent == "long") {res} else {res[1:3]}
+				res
+        }
+}
+
+#
+# sumvector <- function (var, dnames = sfdefault("namesum"),
+#                        reportNA = sfdefault("reportNA")) {
+#         if (length(var) == 0) {
+#                 sapply(numeric(length = 9), function(x) NA)
+#         }else {# construct a more complete summary vector
+#                 nonavar <- nonavect(var)
+#                 numcases <-  length(nonavar)
+#                 numna <- length(var) - numcases
+#                 meanval <- mean(nonavar)
+#                 sdval <- sd(nonavar)
+#
+#                 res <- c(numcases, meanval, sdval, quantile(nonavar))
+#
+#                 if (reportNA) {
+#                         names(res) <- dnames[1:8]
+#                 } else {
+#                         res <- c(res,numna)
+#                         names(res) <- dnames
+#                 }
+#                 res
+#         }
+# }
+
+
+
+
+
+
+
+#' Combined summaries for different variables in a dataframe, for all individuals
+cbsummaries <- function (dataf, vnames, extent = "long") {
+        # vnames = a vector of variable names (each a numeric variable of dataf)
+        lsum = lapply(vnames, function(nam) sumvector(dataf[[nam]], extent = extent ))
+        df <- do.call(what = data.frame, args = lsum)
+        colnames(df) <- vnames
+        # rownames(df) <- namesum
+        df
+}
+
+
+
+#' Combined summaries for one variable, *conditional* to the values of a factor
+condsummaries <- function(dataf, vname, fname,  extent = "long") {
+        # vname = the variable name
+        # fname = the factor name
+        # levels: if not factor, make it a factor and take the levels
+        if (is.factor(dataf[[fname]])) {
+                lv <- levels(dataf[[fname]])
+        } else {
+                lv <- levels(factor(dataf[[fname]]))
+        }
+        lsum = lapply(lv ,
+                      FUN=function(lev) {
+                              dt <- dataf[dataf[[fname]]==lev , ]
+                              sumvector(dt[[vname]], extent = extent)
+                      } )
+        df <- do.call(what = data.frame, args = lsum)
+        colnames(df) <- lv
+        # rownames(df) <- namesum # rownames are preserved
+        df
+}
+
+
+
+
+#' Frequency tables
+#' --------------------------------------------------------------
+
+
+# joint frequency table
+jointfreqtable <- function(dataf, nomfact1, nomfact2, useNA = "no") {
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[nomfact1]]) & !is.na(dataf[[nomfact2]]) , ]
+        }
+        table(dataf[[nomfact1]], dataf[[nomfact2]] , useNA = useNA)
+}
+
+
+# new . fonctionne avec des tbl_df aussi
+condfreqtable <- function(dataf, nomfact1, nomfact2, useNA = "no") {
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[nomfact1]]) & !is.na(dataf[[nomfact2]]) , ]
+        }
+        dt <-prop.table(table(dataf[[nomfact1]], dataf[[nomfact2]] , useNA = useNA),
+                        margin = 1)
+        dt2 <- as.data.frame(dt)
+        names(dt2) <- c(nomfact1, nomfact2, "perc") # compatibilite avec la def ancienne
+        dt2
+}
+
+
+
+
+#'
+#' Reordering factors
+#' -------------------------------------------------
+#'
+# new definition seems ok for both data.frame and tbl_df
+orderfact <- function(dataf, nomfact, orderfreq = TRUE, orderdesc = TRUE,
+                      ordervar = "c..nt", orderval = NA, orderfun = sum,
+                      nlevels = NULL) {
+        if (is.null(nlevels)) {
+                direction <- ifelse(orderdesc,-1, 1)
+
+                if (orderfreq & ordervar == "c..nt") {
+                        dataf$c..nt <- c(1)
+                }
+                if (is.na(orderval) & ordervar == "c..nt") {
+                        dataf$c..nt <- c(1)
+                } else if (is.na(orderval) & ordervar != "c..nt") {
+                        # dataf$c..nt <- ifelse(is.na(dataf[, ordervar]), 0, 1)
+                        #
+                        # ordervar <- "c..nt"
+                        # ne rien faire ??
+                } else {
+                        dataf$c..nt <-
+                                ifelse(is.na(dataf[[ordervar]]),
+                                       0 ,
+                                       ifelse(dataf[[ordervar]] == orderval,
+                                              1, 0))
+                        ordervar <- "c..nt"
+                }
+                # reordonner le facteur
+                if (orderfreq) {
+                        xx <- dataf[[nomfact]]
+                        xxx <- direction * dataf[[ordervar]]
+                        resfact <- reorder(xx, xxx, orderfun, na.rm = TRUE)
+                } else {
+                        resfact <- dataf[[nomfact]]
+                }
+        } else {
+                resfact <- factor(dataf[[nomfact]], levels = nlevels) ### modfié ????????????
+        }
+        # retour
+        resfact
+}
+
+#'
+#' Statistical Testing functions
+#' ---------------------------------------------------------------
+
+# try.chisq.test ==> essaye un test du chi2, et si il genere un warning
+# (conditions approximation du chi2 non satisfaites), alors, calculer la
+# p-valeur par simulation
+# si keep-all, retourne les 2 tests (chi2 et
+# simulation, une valeur logique indiquant le warning, et le warning lui-m?me).
+# Le test prefere est alors list? comme test1
+
+try.chisq.test <- function(..., keep.all = TRUE) {
+        ww <- tryCatch(chisq.test(...),
+                       error = function(e) {e},
+                       warning = function(w) w )
+
+        if (is.warning(ww)) {
+                if (keep.all) {
+                        list(test1 = chisq.test(..., simulate.p.value = TRUE),
+                             test2 = chisq.test(...),
+                             warning = TRUE,
+                             warningmsg = ww )
+                } else {
+                        list(test1 = chisq.test(..., simulate.p.value = TRUE))
+                }
+        } else {
+                if (keep.all) {
+                        list(test1 = chisq.test(...),
+                             test2 = chisq.test(..., simulate.p.value = TRUE),
+                             warning = FALSE,
+                             warningmsg = "" )
+                } else {
+                        list(test1 = chisq.test(...))
+                }
+        }
+}
+
+
+
+#'-----------------------------------------------------------------
+#'
+
+
+#' Graphing functions
+#' ================================================================
+#'
+#'
+
+#'
+#' display graphs
+#' --------------
+# display graphs, works with ggplot2 and gtable graphs. sends graphs to default
+# or windows device (set the default in defdevice)
+displaygraph <- function(one.graph,
+                         windevice = defdevice,
+                         width = nfigwidth,
+                         height = nfigheight ) {
+        if (missing(windevice)) {windevice <- NULL}
+        if (is.null(windevice)) {
+                grid.newpage()
+                grid.draw(one.graph)
+        } else {
+                windows(width = width, height = height)
+                grid.newpage()
+                grid.draw(one.graph)
+                Sys.sleep(defsleep)
+                dev.off()
+        }
+}
+
+
+#' Simple bar chart
+#' ----------------
+#
+# sfdefault("percentlabel")
+
+barchart <- function(dataf,
+                     nomvar,
+                     useNA = "no",
+                     #digits = sfdefault("digits"),
+                     rfreq = TRUE,
+                     barwidth = sfdefault("discretebarwidth"),
+                     cfill = sfdefault("filldefault"),
+                     percentlabel = sfdefault("percentlabel") ) {
+        # data+aes
+        if (useNA == "no") {
+                dataf <- dataf[which(!is.na(dataf[[nomvar]])),]
+        }
+        if (rfreq) {
+                pt <- ggplot(dataf,
+                             aes_(as.name(nomvar),
+                                  quote(
+                                          100 * ..count.. / sum(..count..)
+                                  )))
+        } else {
+                pt <- ggplot(dataf,
+                             aes_(as.name(nomvar)))
+        }
+        # geom
+        pt <- pt + geom_bar(width = barwidth, fill = cfill)
+        # ylabel
+        if (rfreq) {
+                pt <- pt + ylab(percentlabel)
+        }
+        pt
+}
+
+
+
+
+#' Pie chart
+#' ----------------
+#'
+# sfdefault("scaletitle" , "") # title for the legend of the pie
+# sfdefault("dolabel" , TRUE) # label the slices with %
+# sfdefault("minperc" , 8) # minimal % value for showing a lable
+# sfdefault("labpos" , 1.1)
+
+piechart <- function(data, var,
+                     scaletitle = sfdefault("scaletitle"),
+                     dolabel = sfdefault("dolabel"),
+                     minperc = sfdefault("minperc"),
+                     labpos = sfdefault("labpos") ) {
+        # define local function
+        piechart1 <- function(data, mapping, scaletitle, dolabel, minperc, labpos) {
+                pie <- ggplot(data) +
+                        geom_bar(mapping, width = 1, color="black") +
+                        scale_x_continuous(labels=NULL, breaks=NULL) +
+                        scale_y_continuous(labels=NULL, breaks=NULL) +
+                        scale_fill_discrete(guide = guide_legend(title = scaletitle)) +
+                        coord_polar(theta = "y") +
+                        xlab(NULL) +
+                        ylab(NULL)
+                st <- ggplot_build(pie)
+                lbldf <- with(st$data[[1]], {
+                        xl <- xmin+ labpos * (xmax-xmin)
+                        yl <- (ymax + ymin)/2
+                        perc <- 100 * round(count/sum(count) , 2)
+                        perclabs <- ifelse( perc > minperc, paste0(as.character(perc),"%"), "")
+                        data.frame(xl, yl,perc, perclabs)
+                } )
+                if (dolabel) {pie <- pie + geom_text(data = lbldf, aes(x=xl, y = yl, label = perclabs))}
+                pie
+
+        }
+        # use local function (passing mapping)
+        piechart1(data, aes_(1, fill = as.name(var)), scaletitle, dolabel, minperc, labpos)
+}
+
+# Try
+# piechart(mpg, "manufacturer", minperc = 1)
+# piechart(mpg, "model", minperc = 3)
+# piechart(mpg, "drv", minperc = 3)
+
+
+
+
+
+#' Simple Histogram + optional density
+#' ------------------------------------
+#'
+chistodens <- function(dataf, nomvar,
+                       usedensity = FALSE, usendensity =FALSE, plot_density = FALSE,
+                       fillhist = sfdefault("filldefault"), color_density = "red", digits = 2, # ? modifier
+                       bins = NULL, closed = NULL, ...) {  # ... = addtl arguments for geom_hist
+        if (plot_density) {
+                usedensity <- TRUE
+        } # plot_density overrides usedensity, density overrides ndensity
+        if (usedensity){
+                usendensity <- FALSE
+        }
+        # bins = Null, integer, or a function name : "nclass.Sturges", "nclass.FD" , "nclass.scott"
+        # get or compute bins (as integer)
+        if (!is.null(bins)) {
+                if ("character" %in% class(bins) ) {
+                        bins <-  do.call(bins, list(nonavect(dataf[[nomvar]])))
+                } else {bins <- NULL
+                warning("bins is not a function", call. = TRUE)}
+        }
+        # make histogram
+        p <- ggplot(dataf, aes_(as.name(nomvar))) +
+                if (usedensity) {geom_histogram(aes(y=..density..),
+                                                bins = bins, fill = fillhist,...)
+                } else if (usendensity) {geom_histogram(aes(y=..ndensity..),
+                                                        bins = bins, fill = fillhist,...)
+                } else {geom_histogram(bins = bins, fill = fillhist, ...)}
+
+        if (plot_density) {p <- p + geom_density(color=color_density) }
+        p
+}
+
+
+#' continuous x factor boxplot & jitter plot
+#' ---------------------------------------
+#'
+cbyfboxjit <- function(dataf, varf, varc, useNA = "no",
+                       labellayer = "", labelall = "All values", labelgroups = "by goup") {
+
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
+        }
+        ggplot(dataf,aes_(as.name(varf) , as.name(varc))) +
+                geom_boxplot(aes(group = 1, fill =  labelall),
+                             outlier.colour = "gray", outlier.size = 0) +
+                geom_boxplot(aes(fill = labelgroups), varwidth = TRUE,
+                             outlier.colour = "gray", outlier.size = 0) +
+                geom_jitter( aes_(color=as.name(varf)), width =.5, alpha=.5) +
+                labs(fill = labellayer)
+}
+
+
+#' continuous x discrete boxplot & jitter plot
+#' --------------------------------------------
+#
+cbydboxjit <- function(dataf, vard, varc, useNA = "no",
+                       labellayer = "", labelall = "All values", labelgroups = "by goup") {
+        # dataf <- as.data.frame(dataf) # same problem with tbl_df
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[vard]]) & !is.na(dataf[[varc]]), ]
+        }
+        dataf$fact_vard. <- factor(dataf[[vard]])
+        ggplot(dataf,aes_(as.name(vard) , as.name(varc), color=quote(fact_vard.))) +
+                geom_boxplot(aes(group = 1, fill =  labelall), outlier.colour = "gray") +
+                geom_boxplot(aes(fill = labelgroups), varwidth = TRUE, outlier.colour = "gray") +
+                geom_jitter( width =.5, alpha=.5) +
+                labs(fill = labellayer)
+}
+
+
+
+#' continuous by factor density plot
+#' ---------------------------------
+
+cbyfdensity <- function(dataf, varf, varc, useNA = "no") {
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
+        }
+        if (!is.factor(dataf[[varf]])) {dataf[[varf]] <- factor(dataf[[varf]])}
+        ggplot(dataf,aes_(as.name(varc), y=quote(..density..), fill=as.name(varf))) +
+                geom_density(alpha = 0.3)
+}
+
+
+#' continuous by factor freqpoly
+#' -----------------------------
+#'
+cbyffreqpoly <- function(dataf, varf, varc, useNA = "no", size = 1) {
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
+        }
+        if (!is.factor(dataf[[varf]])) {dataf[[varf]] <- factor(dataf[[varf]])}
+        ggplot(dataf,aes_(as.name(varc), y=quote(..ndensity..), color=as.name(varf))) +
+                geom_freqpoly(size = size)
+}
+
+
+#'
+#' continuous by factor dodged histogram
+#' -------------------------------------
+#'
+
+cbyfhistogram <- function(dataf, varf, varc, useNA = "no",
+                          usedensity = FALSE, usendensity = FALSE, ...) {
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
+        }
+        if (!is.factor(dataf[[varf]])) {dataf[[varf]] <- factor(dataf[[varf]])}
+
+        # s <- condsummaries(dataf,vname = varc, fname = varf )
+
+        p <- if (usedensity) {ggplot(dataf,aes_(as.name(varc), y=quote(..density..), fill=as.name(varf)))
+        } else if (usendensity) {ggplot(dataf,aes_(as.name(varc), y=quote(..ndensity..), fill=as.name(varf)))
+        } else {ggplot(dataf,aes_(as.name(varc), fill=as.name(varf)))}
+        p <- p+ geom_histogram(..., position = "dodge")
+        p
+}
+
+
+#' continuous by factor faceted histogram
+#' ---------------------------------------
+#'
+cbyffachistogram <- function(dataf, varf, varc, useNA = "no",
+                             usedensity = FALSE, usendensity = FALSE, ...) {
+        if (useNA == "no") {
+                dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
+        }
+        if (!is.factor(dataf[[varf]])) {dataf[[varf]] <- factor(dataf[[varf]])}
+
+
+        p <- if (usedensity) {
+                ggplot(dataf,aes_(as.name(varc), y=quote(..density..), fill=as.name(varf)))
+        } else if (usendensity){
+                ggplot(dataf,aes_(as.name(varc), y=quote(..ndensity..), fill=as.name(varf)))
+        } else {
+                ggplot(dataf,aes_(as.name(varc), fill=as.name(varf)))
+        }
+        p <- p+ geom_histogram(...)
+
+        form <- as.formula(paste0(varf,"~."))
+        p+ facet_grid(form)
+}
+
+
+
+
+
+#'
+#' Multiple plot function
+#' ---------------------------
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+        library(grid)
+
+        # Make a list from the ... arguments and plotlist
+        plots <- c(list(...), plotlist)
+
+        numPlots = length(plots)
+
+        # If layout is NULL, then use 'cols' to determine layout
+        if (is.null(layout)) {
+                # Make the panel
+                # ncol: Number of columns of plots
+                # nrow: Number of rows needed, calculated from # of cols
+                layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                                 ncol = cols, nrow = ceiling(numPlots/cols))
+        }
+
+        if (numPlots==1) {
+                print(plots[[1]])
+
+        } else {
+                # Set up the page
+                grid.newpage()
+                pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+
+                # Make each plot, in the correct location
+                for (i in 1:numPlots) {
+                        # Get the i,j matrix positions of the regions that contain this subplot
+                        matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+
+                        print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                                        layout.pos.col = matchidx$col))
+                }
+        }
+}
+
+
+
+
+
+#' -------------------------------------
+#'
+
+
+#'
+#' Main analysis functions
+#' ================================================================
+#'
+
+#' **Resultat desires:**
+#' *  **une variable non structurée** : question ouverte
+#'     * verbatim : liste des réponses
+#'     * verbatim2 : liste : col 1 = valeurs d'un facteur, col2 = réponses correspondantes
+#'
+#' *  **une variable**
+#'     * cat1  1 facteur
+#'     * num1c 1 variable continue
+#'     * num1d 1 variables discrete
+#'
+#' *  **deux variables**
+#'     * cat2  2 facteurs
+#'     * cat1num1
+#'     * num2
+#'
+
+
+#'
+#' verbatim + verbatim2  = list of text values ( as in "other..." answers)
+#' ---------------------------------------------------------------------
+#'
+
+
+verbatim <- function(dataf, nomfact, useNA = "no"){
+        dataf <- if (useNA == "no") {
+                nonadf(dataf, nomfact)
+        } else {
+                dataf
+        }
+        numc <- length(nonavect(dataf[[nomfact]]))
+        ptable <- as.data.frame(dataf[[nomfact]])
+        colnames(ptable) <- "Verbatim"
+        make.result(name = makeresname(nomfact, "verbatim"), # modifié
+                    caption = paste0( nomfact, " (verbatim)" ), #modifié
+                    funname = verbatim,
+                    varnames = c(nomfact = nomfact), # ??? is named vector ok ??
+                    ptable = ptable,
+                    numcases = numc)
+}
+
+#' verbatim2 lists another variable alongside to "explain" verbatims
+#' (bynomfact is not filtered for NA values: we want all responses to nomfact)
+verbatim2 <- function(dataf, nomfact, bynomfact,  useNA = "no"){
+        dataf <- if (useNA == "no") {
+                nonadf(dataf, nomfact)
+        } else {
+                dataf
+        }
+        numc <- nrow(dataf)
+        ptable <- dataf[order(dataf[[bynomfact]]), c(bynomfact, nomfact)]
+        colnames(ptable) <- c( bynomfact, "Verbatim")
+        make.result(name = makeresname(c(nomfact,bynomfact), "verbatim2" ) , #modifié
+                    funname = verbatim2,
+                    varnames = c(nomfact = nomfact, bynomfact = bynomfact),
+                    tables = list(ptable = ptable), # *************modif 1219
+                    numcases = numc)
+}
+
+
+
+#'
+#' cat1 : 1 categorical variable
+#' --------------------------------------------------------------------
+#'
+
+cat1 <- function(dataf, nomfact, useNA = "no",
+                 orderfreq = sfdefault("orderfreq"),
+                 orderdesc = TRUE, ordervar = "c..nt",
+                 orderval = NA, orderfun = sum,
+                 dotest = TRUE, # make a chi2 test?
+                 digits = 2,
+                 plots = sfdefault("cat1plots"),
+                 # options for barchart
+                 rfreq = TRUE, cfill = sfdefault("filldefault"),
+                 # options for piechart
+                 scaletitle = sfdefault("scaletitle"),
+                 dolabel = sfdefault("dolabel"),
+                 minperc = sfdefault("minperc"),
+                 labpos = sfdefault("labpos") ) {
+        # useNA = "always, "ifany" or "no",
+        # orderfreq = TRUE  or FALSE,
+        # descorder =TRUE or FALSE
+        # ordervar = variable to use for ordering,
+        # orderval = value if the ordering variable is the frequency of ordervar == value
+
+        # reordering the levels:
+        dataf[[nomfact]] <-
+                orderfact(dataf, nomfact,
+                          orderfreq, orderdesc, ordervar, orderval, orderfun)
+        # getting rid of NA's ?
+        dataf <- if (useNA == "no") {
+                nonadf(dataf, nomfact)
+        } else {
+                dataf
+        }
+        # make table as dataframe
+        tbl <- table(dataf[[nomfact]], useNA = useNA)
+        tbl <- data.frame(num = tbl, rfreq = tbl / sum(tbl))
+        tbl <- tbl[, c(1,2,4)]
+        names(tbl) <- c(nomfact, "num", "rfreq")
+        tbl$numlabs <- paste0("n=" ,tbl$num)
+        tbl$perclabs <- paste0(100 * round(tbl$rfreq, digits),"%")
+        tbl$index <- ave(1:nrow(tbl),  FUN = function(x) 1:length(x)) # rank
+        num <- sum(tbl$num)
+        # printable table
+        ptb <- tbl[1:3]
+        colnames(ptb) <- c(nomfact, "Freq.", "Rel.Freq")
+        # put relative freq in % units ***************************************Edit
+        ptb[[3]] <- 100 * ptb[[3]]
+
+        # Goodness-of-Fit chi-square test for a uniform distribution
+        if (dotest) {uchisq <- try.chisq.test(tbl[["num"]])
+        } else {uchisq <- NULL
+        }
+
+        # bar chart with ggplot2
+        # # the data
+        # dataf1 <- if (useNA == "no") {
+        #         dataf[which(!is.na(dataf[[nomfact]])), ]
+        # } else {
+        #         dataf
+        # }
+        # # base ggplot
+        # pt <- if (rfreq) {
+        #         ggplot(dataf1,
+        #                aes_(as.name(nomfact), quote(100 * ..count.. / sum(..count..))))
+        # } else {
+        #         ggplot(dataf1,
+        #                aes_(as.name(nomfact)))
+        # }
+        # # geom
+        # pt <- pt + geom_bar(fill = cfill)
+        # # ylabel
+        # if (rfreq) {pt <- pt + ylab(label = "percent")}
+        bar <- barchart(dataf, nomvar=nomfact, useNA = useNA, rfreq = rfreq,
+                             barwidth = sfdefault("discretebarwidth"),
+                             cfill = cfill, percentlabel = sfdefault("percentlabel") )
+
+        pie <- piechart(dataf, nomfact,
+                             scaletitle = scaletitle,
+                             dolabel = dolabel,
+                             minperc = minperc,
+                             labpos = labpos )
+        # prepare plots for storage
+        plot0 <- NULL
+        plot1 <- NULL
+        plot2 <- NULL
+        plot3 <- NULL
+        maxplots <- sfdefault("maxplots")
+        for (i in 1:min(length(plots), maxplots)) {
+                pname <- paste("plot", i-1, sep = "")
+                assign(pname, eval(as.name(plots[i])))
+        }
+
+        # return
+        make.result(name = makeresname(nomfact, "cat1"), #modifié
+                    funname = cat1,
+                    varnames = c(nomfact = nomfact),
+                    numcases = num,
+                    levels = levels(dataf[[nomfact]]),
+                    tables = list(table = tbl, ptable = ptb), # ************* modif 1219
+                    tests = list(chi2 = uchisq), # ************* modif 1219
+                    plots = list(plot = plot0, plot1 = plot1,plot2 = plot2, plot3 = plot3)
+                   )
+}
+
+
+
+
+#'
+#' mocat1 : Multiple Ordered Categorical
+#' --------------------------------------
+#'
+
+mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NULL,
+                   fill = sfdefault("filldefault"), colorannots = sfdefault("colorannots1"),
+                   rankscale = "log", # "normal", "inverse", "log"
+                   ranksok= c(1, 5), # elimination des valeurs aberrantes 
+                   maxrankgraph = 3 ) {
+        
+        variables <- grep(paste0("^" , prefix), 
+                          colnames(dataf), 
+                          value = TRUE) # => get the relevant cols names
+        if (is.null(valvect)) {valvect <- variables}
+        if (is.null(valshort)) {
+                valshort <- substring(variables, nchar(prefix) + 1, 100)
+        }
+        if (is.null(valname)) {valname <- prefix}
+        
+        # verify input---------------------------------------------------------
+        if (length(variables) != length(valvect) |
+            length(variables) != length(valshort)){
+                error(" mocat1 : argument lengths mismatch")
+        }
+        # utility def ----------------------------------------------------------
+        # correspondance table for use in graphs and tables 
+        corrtable <- data.frame(variable = variables,
+                                valvect,
+                                valshort) 
+        
+        # data manipulation ----------------------------------------------------
+        # Data: keep only useful cols
+        dataf <- dataf[ , variables]
+        
+        # remove incorrect ranks
+        for (i in 1: nrow(dataf)) {
+                for(j in 1:ncol(dataf)) {
+                        if (!is.na(dataf[i, j])) {
+                                if( dataf[i, j] < min(ranksok) | dataf[i, j] > max(ranksok)) {
+                                        dataf[i, j] <- NA
+                                }
+                        }
+                }
+        }
+        
+        # keep only useful rows
+        isuseful <- rep(TRUE, nrow(dataf)) #initialisation
+        for(i in 1:nrow(dataf))
+        {isuseful[i] <- !all(is.na(dataf[i, ]))}
+        dataf <- dataf[isuseful, ]
+        
+        
+        ncases <- nrow(dataf) # nombre de cas (individus répondants)
+        
+        ## long format for the ranks dfrm, for tables and graphs: 
+        lresdf <- melt(dataf)
+        lresdf <- nonadf(lresdf,"value") # get rid of NA's
+        
+        # make tables: -------------------------------------------------------
+        # 
+        # a) individuals and ranks ...........................................
+        # compute % of individuals and citations explicitly, 
+        # record the variable values in lims
+        restable <- group_by(lresdf, variable) %>%
+                summarise(nbcit = n(),
+                          rangmed = median(value)) %>%
+                arrange(desc(nbcit)) %>%
+                mutate(percases = 100 * nbcit / ncases,
+                       percit = 100 * nbcit / sum(nbcit))
+        
+        restable$valnames <- vlookup(restable$variable, searchtable = corrtable,
+                                     searchcol = "variable", returncol = "valvect")
+        restable$shortname <- vlookup(restable$variable, searchtable = corrtable,
+                                      searchcol = "variable", returncol = "valshort")
+        
+        # b) citations by ranks ...........................................
+        # Rem : NOT ideal, to be improved with tidy eval
+        restable0 <-  lresdf  %>%
+                group_by(variable) %>%
+                summarise(nbcit0 = n()) %>%
+                mutate(percit0 = 100 * nbcit0 / sum(nbcit0))
+        restable1 <-  filter(lresdf, value == 1) %>%
+                group_by(variable) %>%
+                summarise(nbcit1 = n()) %>%
+                mutate(percit1 = 100 * nbcit1 / sum(nbcit1))
+        restable2 <-  filter(lresdf, value == 2) %>%
+                group_by(variable) %>%
+                summarise(nbcit2 = n()) %>%
+                mutate(percit2 = 100 * nbcit2 / sum(nbcit2))
+        restable3 <-  filter(lresdf, value >= 3) %>%
+                group_by(variable) %>%
+                summarise(nbcit3 = n()) %>%
+                mutate(percit3 = 100 * nbcit3 / sum(nbcit3))
+        # 
+        #         # citetable <- merge(restable0, restable1, by = "variable")
+        #         # citetable <- merge(citetable, restable2, by = "variable")
+        #         # citetable <- merge(citetable, restable3, by = "variable")
+        #         # citetable <- arrange(citetable, desc(nbcit0), desc(nbcit1))
+        
+        # better
+        citetable <- plyr::join_all(list(restable0, restable1, restable2, restable3),
+                                    by = "variable")
+        
+        # 
+        # # new summarising function (the whole thing is NOT WORKING)
+        # tbrank <- function(i, maxrank){
+        #         nbcitname <- paste0("nbcit", as.character(i))
+        #         percitname <- paste0("percit", as.character(i))
+        #         # filter data for cerain ranks
+        #         if (i == 0){
+        #                 message(0)
+        #                 fildf <- lresdf
+        #         }else if (i >= maxrank) {
+        #                 message("maxrank")
+        #                 fildf <- filter(lresdf, value >= !!maxrank)
+        #         }else{
+        #                 message( "NORMAL")
+        #                 fildf <- filter(lresdf, value == i)
+        #         }
+        #         ~# compute table
+        #         fildf %>%
+        #                 group_by(variable) %>%
+        #                 summarise(!!nbcitname := n()) %>% 
+        #                 mutate(!!percitname := 100 * !!as.name(nbcitname) / sum(!!as.name(nbcitname)))
+        # }
+        # 
+        # 
+        # list_table <- local(
+        #         {
+        #             lapply(0:maxrankgraph,
+        #                    tbrank,
+        #                    maxrankgraph)    
+        #         }
+        # )
+        # 
+        # 
+        # citetable <- plyr::join_all(list_table, by = "variable") # FAILS HERE*************
+        # # citetable <- plyr::join_all(list(restable0, restable1, restable2, restable3))
+        
+        
+        
+        
+        # printable table and graphs preparation ...............................
+        
+        utable <- select(restable, variable, nbcit, percases, percit, rangmed) #useful
+        
+        
+        lims <- restable$variable # to ensure both plots have the same category order
+        graphlabels <- as.character(restable$shortname) # short names, in the same order as lims !! as character !
+        names(graphlabels) <- lims # (to be sure and not to depend on order later)
+        
+        ptable <- select(restable, variable, nbcit, percases, percit, rangmed) #printable
+        colnames(ptable) <- c(valname, "citations", "%individus", "%citations", "rang median")
+        ptable[[1]] <- graphlabels
+        
+        
+        # make graphs ----------------------------------------------------------- 
+        # 
+        # %individuals + ranks .................................................
+        
+        barp <- ggplot(restable, aes(variable, percases)) +
+                geom_bar(stat="identity", fill = fill) +
+                scale_x_discrete(limits = rev(lims), labels = graphlabels) + 
+                labs(y = "% individus", x = valname) +
+                coord_flip()
+        
+        violinp_lin <- ggplot(lresdf, aes(variable, value)) +
+                geom_violin() +
+                geom_jitter(height = 0.03, width = 0.3,
+                            alpha = 0.4, color = "steelblue") +
+                geom_point(data = utable, aes(variable,rangmed),
+                           color = "red", size = 4, alpha = 0.4) +
+                geom_line(data = utable, aes(variable,rangmed, group = 1),
+                          color = colorannots, alpha = 0.4) +
+                scale_x_discrete(labels = NULL,
+                                 limits=rev(lims)) +
+                # scale_y_continuous(limits = c(0.5, 5.5)) +
+                labs(x = NULL, y = 'Rang citation') +
+                coord_flip()
+        
+        # violinp_inverse <- ggplot(lresdf, aes(variable, I(1 / value))) +
+        #         geom_violin() +
+        #         geom_jitter(height = 0.02, width = 0.3,
+        #                     alpha = 0.4, color = "steelblue") +
+        #         geom_point(data = utable, 
+        #                    aes(variable, I(1 / rangmed)),
+        #                    color = "red", size = 4, alpha = 0.4) +
+        #         geom_line(data = utable, 
+        #                   aes(variable, I(1 / rangmed), group = 1),
+        #                   color = "red") +
+        #         scale_y_reverse(breaks = 1 / 1:5,  #c(1, 0.5, 0.33, 0.25, 0.20),
+        #                         labels = 1:5) +
+        #         # ylim(c(1.1, 0)) +
+        #         scale_x_discrete(labels = NULL,
+        #                          limits=rev(lims)) +
+        #         labs(x = NULL, y = 'Rang de citation (inversé)') +
+        #         coord_flip()
+        violinp_inverse <- violinp_lin +
+                scale_y_continuous( trans = 'reciprocal',
+                                    breaks = c(1:5),  #c(1, 0.5, 0.33, 0.25, 0.20),
+                                    labels = 1:5) +
+                labs(y = 'Rang de citation (inversé)')
+        violinp <- switch(rankscale,
+                          normal = violinp_lin,
+                          inverse = violinp_inverse, # incorrect for the moment
+                          log = violinp_lin + 
+                                  scale_y_log10(breaks = 1:5 ,
+                                                labels = 1:5),
+                          violinp_lin
+        )
+        
+        # violinp <- violinp_lin
+        # violinp <- violinp_inverse
+        # 
+        # combined plot
+        indivrank_cp <- cowplot::plot_grid(barp, violinp, 
+                                           nrow = 1, rel_widths = c(2,1),
+                                           align = 'h', axis = 'b')
+        
+        
+        # %citations, by ranks .................................................
+        # barchart faceted by rank  ----------------------------------------------------
+        
+        
+        # modif rangs
+        # 
+        lresdf$rang <-factor(sapply(lresdf$value, 
+                                    function(x) {
+                                            ifelse(x < maxrankgraph, 
+                                                   yes = as.character(x), 
+                                                   no = paste0(as.character(maxrankgraph),"+" 
+                                                   ))}))
+        
+        lresdf [["variable"]] <- orderfact(lresdf, "variable")
+        
+        levels(lresdf [["variable"]])
+        
+        graphlabs <- as.character(vlookup(levels(lresdf [["variable"]]), searchtable = corrtable,
+                                          searchcol = "variable", returncol = "valshort")) 
+        # short names, in the same order as lims !! as character !
+        
+        # facetnames
+        rankvalues <- c(as.character(1:(maxrankgraph - 1)), 
+                        paste0(as.character(maxrankgraph),"+")) 
+        facetlabs  <-  c("Ensemble", paste("Rang =", rankvalues ))
+        names(facetlabs) <- c("(all)", rankvalues)
+        
+        # =================================================================================**************
+        # barplots with y = counts // proportions (generate both plots)
+        
+        bpbcount <- ggplot(lresdf, aes(variable, fill = rang))
+        
+        # proportion = y
+        bpbprop <- ggplot(lresdf, aes(variable, fill = rang, y = ..prop..,group = rang )) 
+        
+        morebar <- function(p, titre = "citations", xscalename = NULL) {
+                p +
+                        geom_bar() +
+                        facet_grid(rang ~ ., margins = TRUE, switch = "y", labeller = labeller(rang = facetlabs)) +
+                        labs(title = titre) + 
+                        scale_x_discrete(xscalename,
+                                         limits = levels(lresdf [["variable"]]),
+                                         labels = graphlabs) +
+                        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3),
+                              legend.position = "none", plot.title = element_text(hjust = 0.5))
+        }
+        
+        barfacetprop <- morebar(p = bpbprop)
+        barfacetcount <- morebar(p = bpbcount)
+        
+        
+        
+        
+        
+        # retour résultat------------------------------------------------------
+        make.result( name = makeresname(prefix, "mocat"), #modifié
+                     funname = "mocat",
+                     varnames = c(prefix = prefix),
+                     numcases = ncases,
+                     # ************* modif 1219
+                     tables = list(ptable = ptable,table1 = citetable,),
+                     plots = list(plot = indivrank_cp,
+                                  plot1 = barfacetcount,
+                                  plot2 = barfacetprop)
+        )
+}
+
+
+# setresult("situation_difficultes") # code that should be in 'depouillement
+
+
+
+
+
+
+
+
+#' num1d = 1 numeric d(iscrete)
+#' -------------------------------------------------------------------------
+
+
+
+# num1d <- function(dataf, nomvar, useNA ="no",
+#                   digits = sfdefault("digits"), sumdigits = sfdefault("sumdigits"),
+#                   rfreq = TRUE, width = sfdefault("discretebarwidth", 0.5), cfill = "steelblue") {
+#         # make a table (with Frequency = nb of rows)
+#         tb <- table(dataf[[nomvar]])
+#         num <- sum(tb)
+#         tbf <- tb/sum(tb)
+#         tbflabs <- paste0(100* round(tbf,digits), "%")
+#         tbl <- data.frame(tb, tbf, tbflabs)
+#         tbl <- tbl[ , c(1,2,4,5)]
+#         colnames(tbl) <-  c(nomvar, "num", "rfreq", "perclabs")
+#         tbl$numlabs  <-  paste0("n=", tbl$num)
+#         tbl$index <- ave(1:nrow(tbl),  FUN = function(x) 1:length(x)) # rank
+#         # printable table
+#         ptb <- tbl[1:3]
+#         ptb[[3]] <- 100 * round(ptb[[3]], digits)
+#         colnames(ptb) <- c(nomvar, "Freq.", "Rel.Freq")
+# 
+#         s <- sumvector(dataf[[nomvar]])
+# 
+#         # Goodness-of-Fit chi-square test for a uniform distribution
+#         uchisq <- try.chisq.test(tbl[["num"]])
+# 
+#         # bar chart
+#         # # data+aes
+#         # if (useNA == "no") {dataf <- dataf[which(!is.na(dataf[[nomvar]])), ]}
+#         # if (rfreq) {
+#         #         pt <- ggplot( dataf,
+#         #                       aes_(as.name(nomvar),
+#         #                            quote(100 * ..count.. / sum(..count..))) )
+#         # } else {
+#         #         pt <- ggplot( dataf,
+#         #                       aes_(as.name(nomvar)) )
+#         # }
+#         # # geom
+#         # pt <- pt + geom_bar(width = width, fill = cfill )
+#         # # ylabel
+#         # if (rfreq) {pt <- pt + ylab("percent")}
+#         bar <- barchart(dataf, nomvar, useNA = useNA, rfreq = rfreq,
+#                         barwidth = sfdefault("discretebarwidth"),
+#                         cfill = cfill, percentlabel = sfdefault("percentlabel") )
+#         boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + geom_boxplot() + coord_flip()
+# 
+#         # return values
+#         make.result(#name = nomvar,
+#                     name = makeresname(nomvar, "num1d"), #modifié
+#                     funname = num1d,
+#                     varnames = c(nomvar = nomvar),
+#                     summaries = s,
+#                     table = tbl,
+#                     ptable = ptb,
+#                     numcases = num,
+#                     chi2 = uchisq,
+#                     plot = bar,  # pt
+#                     plot1 = boxp
+#                     )
+# }
+
+
+# new definition:
+num1d <- function(dataf, nomvar, useNA ="no",
+                  digits = sfdefault("digits"), sumdigits = sfdefault("sumdigits"),
+                  rfreq = TRUE, width = sfdefault("discretebarwidth", 0.5), 
+                  cfill = "steelblue", rel_heights = c(2, 1)) {
+        # make a table (with Frequency = nb of rows)
+        tb <- table(dataf[[nomvar]])
+        num <- sum(tb)
+        tbf <- tb/sum(tb)
+        tbflabs <- paste0(100* round(tbf,digits), "%")
+        tbl <- data.frame(tb, tbf, tbflabs)
+        tbl <- tbl[ , c(1,2,4,5)]
+        colnames(tbl) <-  c(nomvar, "num", "rfreq", "perclabs")
+        tbl$numlabs  <-  paste0("n=", tbl$num)
+        tbl$index <- ave(1:nrow(tbl),  FUN = function(x) 1:length(x)) # rank
+        # printable table
+        ptb <- tbl[1:3]
+        ptb[[3]] <- 100 * round(ptb[[3]], digits)
+        colnames(ptb) <- c(nomvar, "Freq.", "Rel.Freq")
+        
+        s <- sumvector(dataf[[nomvar]])
+        
+        # Goodness-of-Fit chi-square test for a uniform distribution
+        uchisq <- try.chisq.test(tbl[["num"]])
+        
+        # bar chart
+        # # data+aes
+        # if (useNA == "no") {dataf <- dataf[which(!is.na(dataf[[nomvar]])), ]}
+        # if (rfreq) {
+        #         pt <- ggplot( dataf,
+        #                       aes_(as.name(nomvar),
+        #                            quote(100 * ..count.. / sum(..count..))) )
+        # } else {
+        #         pt <- ggplot( dataf,
+        #                       aes_(as.name(nomvar)) )
+        # }
+        # # geom
+        # pt <- pt + geom_bar(width = width, fill = cfill )
+        # # ylabel
+        # if (rfreq) {pt <- pt + ylab("percent")}
+        barp <- barchart(dataf, nomvar, useNA = useNA, rfreq = rfreq,
+                         barwidth = sfdefault("discretebarwidth"),
+                         cfill = cfill, percentlabel = sfdefault("percentlabel") )
+        boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + geom_boxplot() + coord_flip()
+        
+        #common limits
+        comlims <- comlimsbarbox(barp = barp, boxp = boxp)
+        
+        # graph prep
+        newbarp <- barp + scale_x_continuous(name = NULL,
+                                             labels = NULL,
+                                             limits = comlims)
+        newboxp <- boxp + 
+                scale_y_continuous(limits = comlims) + 
+                scale_x_continuous(name = "", breaks = NULL)
+        
+        # return values
+        make.result(#name = nomvar,
+                name = makeresname(nomvar, "num1d"), #modifié
+                funname = num1d,
+                varnames = c(nomvar = nomvar),
+                summaries = s,
+                numcases = num,
+                # ************* modif 1219
+                tables = list(table = tbl,ptable = ptb),
+                tests = list(chi2 = uchisq),
+                plots = list(plot = cowplot::plot_grid(newbarp, newboxp, 
+                                                       ncol = 1, rel_heights = rel_heights,
+                                                       align = 'v', axis = 'b'),
+                             plot1 = barp,  # pt
+                             plot2 = boxp
+                )
+        )
+}
+
+
+
+
+
+
+#' num1c = 1 numeric c(ontinuous)
+#' -----------------------------------------------------------------------------
+
+# another helper function
+# make class labels from bins vector
+mkclabs <- function(breaks, sep = " - ", closed = NULL) {
+        if (is.null(closed)) {closed <- "right"} # default close="right"
+        # closed
+        if (closed == "right") {
+                bchar <- "]"
+        } else if (closed == "left") {
+                bchar <- "["
+        } else {
+                bchar <- "|"
+                warning("Invalid 'closed' argument in mkclabs")
+        }
+
+        left <- head(breaks, length(breaks) - 1)
+        right <- tail(breaks, length(breaks) - 1)
+        mapply(function(x,y){paste0(bchar,x, sep , y, bchar)},
+               left, right, SIMPLIFY =TRUE)
+}
+
+
+# Find common limits (histogram + Boxplot ) ------------------------------------
+comlimshistbox <- function(histp, boxp, safemargin = 0.05){
+        # 1. make limits of both plots
+        tb <- ggplot_build(histp)$data[[1]][ , 1:8] # get freq table from histogram
+        hminmax <- c(min(tb[ ,"xmin"]),max(tb[ ,"xmax"]) ) #min-max of histogram bins
+        build_boxp <- ggplot_build(boxp) #get min-max of boxplot data
+        bminmax <- c(build_boxp$data[[1]][1,"ymin_final"], 
+                     build_boxp$data[[1]][1,"ymax_final"])
+        
+        lmtp <- c(bminmax, hminmax) # mixed limits of plots
+        halfrng <-  (max(lmtp) - min(lmtp)) / 2 # half range
+        crng <- (max(lmtp) + min(lmtp)) / 2 # center of range
+        lmtp <- crng + c(-1, 1) * halfrng * (1 + safemargin) # new limits of both plots
+        
+        # dbg
+        # message(paste(round(lmtp[1], 0), round(lmtp[2], 0) ) )
+        
+        return(lmtp) 
+}
+
+
+# Find common limits (barplot + Boxplot )
+comlimsbarbox <- function(barp, boxp, safemargin = 0.05){
+        # 1. make limits of both plots
+        tbfull <- ggplot_build(barp)$data[[1]]
+        # tb <- tbfull[ , 1:8] # get freq table from barplot
+        
+        hminmax <- c(min(tbfull[ ,"xmin"]), max(tbfull[ ,"xmax"]) ) #min-max of barplot bars
+        
+        build_boxp <- ggplot_build(boxp) #get min-max of boxplot data
+        bminmax <- c(build_boxp$data[[1]][1,"ymin_final"], 
+                     build_boxp$data[[1]][1,"ymax_final"])
+        
+        lmtp <- c(bminmax, hminmax) # mixed limits of plots
+        halfrng <-  (max(lmtp) - min(lmtp)) / 2 # half range
+        crng <- (max(lmtp) + min(lmtp)) / 2 # center of range
+        lmtp <- crng + c(-1, 1) * halfrng * (1 + safemargin) # new limits of both plots
+        
+        # dbg
+        # message(paste(round(lmtp[1], 0), round(lmtp[2], 0) ) )
+        
+        return(lmtp) 
+}
+
+
+
+
+
+
+# num1c(new)
+num1c <- function(dataf, nomvar, usedensity = FALSE, plot_density = FALSE,
+                  fillhist = sfdefault("filldefault"), color_density = "red", digits = 2, # ? modifier
+                  bins = "nclass.FD", closed = "left",
+                  rel_heights = c(2, 1), safemargin = 0.05,
+                  ...) {  # ... = addtl arguments for geom_hist
+        if (plot_density) {usedensity <- TRUE} # plot_density overrides usedensity
+        # bins = Null, integer, or a function name : "nclass.Sturges", "nclass.FD" , "nclass.scott"
+        # get or compute bins (as integer)
+        if (!is.null(bins)) {
+                if ("character" %in% class(bins) ) {
+                        bins <-  do.call(bins, list(nonavect(dataf[[nomvar]])))
+                } else {bins <- NULL
+                warning("bins is not a function", call. = TRUE)}
+        }
+        # make histogram (version 1)
+        hp <- ggplot(dataf, aes_(as.name(nomvar))) +
+                if (usedensity) {geom_histogram(aes(y=..density..),
+                                                bins = bins, fill = fillhist,...)
+                } else {geom_histogram(bins = bins, fill = fillhist, ...)}
+        
+        if (plot_density) {hp <- hp + geom_density(color=color_density) }
+        
+        # make boxplot (version 1)
+        boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + 
+                geom_boxplot() + coord_flip()
+        
+        # make summaries vector + get number of cases ------------------------
+        s = sumvector(dataf[[nomvar]])
+        num = s["n"] # number of cases
+        
+        # get the frequency table from ggplot ---------------------------------
+        tb <- ggplot_build(hp)$data[[1]][ , 1:8]
+        # add  columns to it
+        tb$rfreq <- tb$count/num
+        tb$numlabs <-  paste0("n=", tb$count)
+        tb$perclabs <- paste0(100* round(tb$rfreq, digits), "%")
+        tb$index <- ave(1:nrow(tb),  FUN = function(x) 1:length(x)) # rank
+        # done, compute more info
+        cbinw <- unique(round(tb$xmax-tb$xmin,digits)) # get binwidth
+        cbreaks <- with(tb, c(xmin[1],xmax)) # get breaks vector from table
+        clabs <- mkclabs(cbreaks, closed = closed) # make class lablels
+        # make a printable table
+        ptb <- data.frame(
+                class = clabs,
+                center = tb$x,
+                freq = tb$count,
+                rfreq = tb$rfreq * 100
+        )
+        
+        # Uniform Chi2 test
+        uchisq <- try.chisq.test(tb$count)
+        # warn if different class widths
+        if (length(cbinw) >= 2) {
+                warning(paste0("Unif chi2 test ",
+                               nomvar,
+                               " called with different class widths!",
+                               call. = TRUE)) }
+        
+        # new plots with common limits --------------------------------------
+        
+        # compute common limits for x scale
+        comlims <- comlimshistbox(hp, boxp, safemargin = safemargin) 
+        
+        # new plots
+        newhp <- ggplot(dataf, aes_(as.name(nomvar)))
+        if (usedensity) {
+                newhp <- newhp + 
+                        geom_histogram(aes(y=..density..),
+                                       breaks = cbreaks, 
+                                       fill = fillhist,
+                                       ...)
+        } else {
+                newhp <- newhp +
+                        geom_histogram(breaks = cbreaks, 
+                                       fill = fillhist,
+                                       ...)
+        }
+        
+        newhp <- newhp + 
+                scale_x_continuous(name = NULL,
+                                   labels  = NULL,
+                                   limits = comlims )
+        
+        if (plot_density) {newhp <- newhp + geom_density(color=color_density) }
+        
+        newboxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + 
+                geom_boxplot(outlier.alpha = 0.5, outlier.colour = "red") + 
+                scale_y_continuous(limits = comlims) + 
+                scale_x_continuous(name = "", breaks = NULL) +
+                coord_flip()
+        
+        # return values -----------------------------------------------------
+        make.result( name = makeresname(nomvar, "num1c"), #modifié
+                     funname = num1c,
+                     varnames = c(nomvar = nomvar),
+                     numcases = num,
+                     summaries = s,
+                     # ************* modif 1219
+                     tables = list(table = tb,  ptable = ptb),
+                     details =list(binwidths = cbinw,
+                                   breaks = cbreaks,
+                                   closed = closed,
+                                   limits = comlims),
+                     tests = list(chi2 = uchisq),
+                     plots = list(plot = cowplot::plot_grid(newhp, newboxp, 
+                                               ncol = 1, rel_heights = rel_heights,
+                                               align = 'v', axis = 'b'), 
+                                  plot1 = hp,
+                                  plot2 = newhp, # temporaire
+                                  plot3 = boxp,
+                                  plot4 = newboxp)# temporaire
+                                  )
+}
+
+
+
+
+
+#' 
+#' cat2 = 2 categorical vars
+#' ---------------------------------------------------------------------
+#'
+
+# definition
+cat2 <- function(dataf, nomfact1, nomfact2,  useNA = "no",
+                 orderfreq1 = sfdefault("orderfreq"), orderdesc1 = TRUE,
+                 ordervar1 = "c..nt",
+                 orderval1 = NA, orderfun1 = sum, nlevel1 =NULL,
+                 orderfreq2 = sfdefault("orderfreq"), orderdesc2 = TRUE,
+                 ordervar2 = "c..nt",
+                 orderval2 = NA, orderfun2 = sum, nlevel2 =NULL,
+                 rfreq = TRUE, digits = 2, cfill = sfdefault("filldefault") ) {
+        # useNA = "always, "ifany" or "no", orderfreq = TRUE  or FALSE,
+        # descorder =TRUE or FALSE
+        # ordervar = variable to use for ordering
+
+        # reordering the levels:
+        # nomfact2 first
+        dataf[[nomfact2]] <-  orderfact(dataf, nomfact2, orderfreq2, orderdesc2,
+                                        ordervar2, orderval2, orderfun2, nlevel2)
+        # nomfact1
+        if(orderfreq1 == TRUE &
+           ordervar1 == nomfact2 & !is.na(orderval1)){ # fr?quences conditionnelles!
+                #print("Frequ cond")
+                tbl <- condfreqtable(dataf, nomfact1, nomfact2,  useNA = "no")
+                #print("apres Frequ cond table")
+                tbl <- tbl[tbl[[nomfact2]] == orderval1, ]
+                # print("tbl") #dbg
+                # print(tbl) #dbg
+                tbl[[nomfact1]] <- orderfact(tbl, nomfact1,
+                                             orderfreq1, orderdesc1,
+                                             ordervar = "perc",
+                                             orderfun = orderfun1) #***************
+                dataf[[nomfact1]] <- orderfact(dataf, nomfact1,
+                                               nlevels = levels(tbl[,nomfact1]))
+        } else { # autres cas
+                dataf[[nomfact1]] <- orderfact(dataf, nomfact1, orderfreq1,
+                                               orderdesc1, ordervar1, orderval1,
+                                               orderfun1, nlevel1)
+        }
+
+        #         print(levels(dataf[[nomfact1]])) #debug
+        #         print(levels(dataf[[nomfact2]])) #debug
+        # make table as dataframe
+        tblcrois <- table(dataf[[nomfact1]], dataf[[nomfact2]], useNA = useNA)
+
+        tbl <- as.data.frame(tblcrois)
+        colnames(tbl) <- c(nomfact1,nomfact2,"num")
+        # print(tbl) #debug
+        num <- sum(tbl$num)
+
+        tbl1 <- summarize_(group_by_(tbl,as.name(nomfact1)),
+                           num=quote(sum(num))) # shit with non-standard eval
+        tbl2 <- summarize_(group_by_(tbl,as.name(nomfact2)),
+                           num=quote(sum(num))) # shit with non-standard eval
+
+        # supplement tbl1
+        tbl1$numlabs = paste0("n=", tbl1$num)
+        if (!is.na(orderval1)){
+                tbl1$numval <- tblcrois[ ,orderval1] # keep it, not a df
+                tbl1$percval <- tbl1$numval / tbl1$num
+                tbl1$perclabs <- paste0(100 * round(tbl1$percval, digits), "%")
+        }
+        tbl1$index <- ave(1:nrow(tbl1),  FUN = function(x) 1:length(x)) # rank
+
+        # Chi-square test for independence
+        ichisq <- try.chisq.test(tblcrois)
+
+        #  bar chart with ggplot2
+        #  data
+        dataf2 <- if (useNA == "no") {
+                dataf[which(!is.na(dataf[[nomfact1]]) &
+                                    !is.na(dataf[[nomfact2]])), ]
+        } else {dataf
+        }
+        #  plot
+        pt <- ggplot(dataf2) +
+                geom_bar(aes_(as.name(nomfact1), fill = as.name(nomfact2)),
+                         position = "Fill") +
+                guides(fill = guide_legend(reverse = TRUE)) +
+                ylab("percent")
+
+        make.result(
+                name = makeresname(c(nomfact1, nomfact2), "cat2" ), #modifié
+                funname = cat2,
+                varnames = c(nomfact1 = nomfact1, nomfact2 = nomfact2),
+                numcases = num,
+                levels =levels(dataf[[nomfact1]]),
+                levels2 =levels(dataf[[nomfact2]]),
+                # ************* modif 1219
+                tables = list(table = tbl1, table1 = tblcrois),
+                details = list(tbl=tbl,tbl2=tbl2),
+                tests = list(chi2 = ichisq),
+                plots = list(plot = pt)
+                
+        )
+}
+
+
+
+
+#' cat1num1 (cat1num1c, cat1num1d)
+#' -------------------------------------------------------------------------
+#
+# fonctions de d?termination du nombre de classes dabs un histogramme
+# nclass.Sturges(mpg$hwy)
+# nclass.FD(mpg$hwy)
+# nclass.scott(mpg$hwy)
+#
+#
+
+
+#' ### fonctions de generation de graphiques
+
+#' useful
+
+# gets the bins number using a function 'bins' == 'nclass.???'
+get.bins <- function(dataf, nomvar, bins) {
+        if (!is.null(bins)) {
+                if ("character" %in% class(bins) ) {
+                        bins <-  do.call(bins, list(nonavect(dataf[[nomvar]])))
+                } else if ("numeric" %in% class(bins) | "integer" %in% class(bins) ) {
+                } else {
+                        bins <- NULL
+                        warning("bins is not a function", call. = TRUE)
+                }
+        }
+        bins
+}
+
+
+get.breaks <- function(dataf,nomvar,bins) {
+        pretty(range(mpg$hwy,
+                     n =  get.bins(dataf, nomvar,bins)))
+}
+
+# # ex
+# range(mpg$cty)
+# get.bins(mpg, "cty", "nclass.Sturges")
+# get.breaks(mpg, "cty", "nclass.Sturges")
+#
+# get.bins(mpg, "cty", "nclass.FD")
+# get.breaks(mpg, "cty", "nclass.FD")
+#
+# get.breaks(mpg, "cty", 17)
+# get.breaks(mpg, "cty", 3)
+# get.breaks(mpg, "cty", 20)
+
+
+bins <- "nClass.Sturges"
+class(bins)
+bins <- 25
+class(bins)
+("numeric" %in% class(bins) | "integer" %in% class(bins))
+
+
+#
+# nb <- get.bins(mpg,"hwy","nclass.Sturges")
+# r <- range(mpg$hwy)
+# w <- r[2]-r[1]
+#
+# bn <- seq(r[1], r[2], by = w/nb)
+# pretty(bn)
+# pretty(c(r[1], r[2]), n = nb)
+
+
+#' ### cat1num1c (in progress)
+
+catnum1c <- function(dataf, nomfact, nomvar,  useNA = "no",
+                     orderfreq = TRUE, orderdesc = TRUE, ordervar = "c..nt",
+                     orderval = NA, orderfun = sum, nlevel =NULL,
+                     labellayer = "", labelall = "All values", labelgroups = "by goup",
+                     breaks = NULL, closed = NULL,
+                     rfreq = TRUE, digits = sfdefault("digits"), cfill = sfdefault("filldefault")){
+        #ordering the factor if needed
+        dataf[[nomfact]] <-  orderfact(dataf, nomfact, orderfreq, orderdesc,
+                                        ordervar, orderval, orderfun, nlevel)
+        # make a plot (box-jitter)
+        pt1 <- cbyfboxjit(dataf, varf=nomfact, varc=nomvar, useNA = useNA,
+                         labellayer = labellayer, labelall = labelall, labelgroups = labelgroups)
+        # faceted histogram
+        pt2 <- cbyffachistogram(dataf, varf=nomfact, varc=nomvar, useNA = useNA,
+                                usedensity = FALSE, usendensity = FALSE,
+                                breaks = breaks, closed = closed)
+        # summaries
+        # c <- condsummaries(dataf = dataf,vname = nomvar,fname = nomfact)
+
+        # tables
+        # make factor with cut
+        # tb1 =
+
+        # Planned:
+        # breaks = NULL,
+        # closed= NULL,
+        # table = NULL,
+        # tabledf = NULL,
+        # ptable = NULL,
+        # chi2 = NULL,
+        # anova = NULL,
+        # plot = NULL )
+
+        # name
+        name=c(nomvar, nomfact) # inutile maintenant ?
+        numcases = length(!is.na(dataf[[nomvar]] & !is.na(dataf[[nomfact]])))
+        # summaries
+        #
+        s <- try(condsummaries(dataf, nomvar, nomfact))
+        # levels
+        nlevels = levels(dataf[[nomfact]]) # see if reorder
+        # breaks = breaks # include in output, nothing to compute ??? depends
+        # table
+        # table <-
+        make.result(
+                name = makeresname(c(nomvar, nomfact), "catnum1c)" ), #modifié
+                funname = catnum1c,
+                varnames = c(nomvar = nomvar, nomfact = nomfact),
+                numcases = numcases,
+                summaries = s,
+                levels = nlevels,
+                # ************* modif 1219
+                plots = list(plot1 = pt1, plot2 = pt2)
+        )
+
+}
+
+
+#' -----------------------------------------------------------------------------
+#' 
+#' 
+#' Fonctions d'affichage (simplifié) des résultats
+#' =============================================
+#' 
+#' Utilitaires
+#' -----------
+#' 
+
+# Markdown text to cat in R output: 
+# usage ==>  titletext("blabla", 3) returns "\n### blabla\n" , (newline necessary for markdown headers)
+#       ==>  titletext("blabla", 0) returns "blabla"
+titletext <- function(text, headerlevel = 0) {
+        hs <- paste0(c( rep("#", times = headerlevel), " ") , collapse = "")
+        if (headerlevel > 0) {
+                paste0("\n", hs, text, "\n")
+        } else {text}
+}
+
+# newline
+newline <- function(n=1) {
+        cat(rep.int("\n", n))
+}
+
+
+#' 
+#' Fonction principale
+#' -----------
+#' 
+
+playres <- function(resname = resname, res = res, ...){ # headerlevel = 0,
+        if (missing(resname)) {
+                if (missing(res)) {
+                        message("Playres : Nothing to play")
+                } else {resname <- res$name }
+        } else {res <- result(resname)} 
+        
+        switch(resnamefun(resname),
+               "verbatim" = play_verbatim(res, ...),
+               "verbatim2" = play_verbatim2(res, ...),
+               "cat1" = play_cat1(res, ...),
+               "mocat1" = play_mcat1(res, ...),
+               "num1d" = play_num1d(res, ...),
+               "num1c" = play_num1c(res, ...),
+               "cat2"= play_cat2(resname, ...),
+               "cat1num1c" = play_cat1num1c(res, ...),
+               "cat1num1d" = play_cat1num1d(res, ...),
+               play_default(res, ...)
+        )
+}
+
+
+#' 
+#' Fonctions spécialisées (~ methodes)
+#' -----------------------------------
+#' 
+
+play_cat1 <- function(res, hastitle = TRUE, custom = FALSE, 
+                      restitle = "variable ",  headerlevel = 0,  ...){
+        fullname <- res$name
+        varnames <- resnamevars(fullname)
+        if (hastitle) {
+                if (custom == TRUE) {
+                        titlestring <- restitle
+                } else {
+                        titlestring <- paste0(restitle, varnames)
+                }
+                cat(titletext(titlestring, headerlevel))
+        } else {
+                #do nothing        
+        }
+        newline()
+        cat(pander(res$tables$ptable, caption = varnames)) 
+        newline(1)
+        # ************* modif 1219
+        displaygraph(res$plots$plot1)
+        newline()
+}
+
+
+play_num1c <-  function(res, hastitle = TRUE, custom = FALSE, 
+                        restitle = "variable ", headerlevel = 0, ...){
+        fullname <- res$name
+        varnames <- resnamevars(fullname)
+        if (hastitle) {
+                if (custom == TRUE) {
+                        titlestring <- restitle
+                } else {
+                        titlestring <- paste0(restitle, varnames)
+                }
+                cat(titletext(titlestring, headerlevel))
+        } else {
+                #do nothing        
+        }        
+        # cat(titletext(varnames, headerlevel))
+        newline()
+        cat(pander(res$summaries))
+        newline()
+        # ************* modif 1219
+        displaygraph(res$plots$plot)                    
+        newline()
+}
+
+
+
+play_num1d <-  function(res, hastitle = TRUE, custom = FALSE, 
+                        restitle = "variable ", headerlevel = 0, ...){
+        fullname <- res$name
+        varnames <- resnamevars(fullname)
+        if (hastitle) {
+                if (custom == TRUE) {
+                        titlestring <- restitle
+                } else {
+                        titlestring <- paste0(restitle, varnames)
+                }
+                cat(titletext(titlestring, headerlevel))
+        } else {
+                #do nothing        
+        }        
+        # cat(titletext(varnames, headerlevel))
+        newline()
+        cat(pander(res$tables$ptable, caption = varnames))
+        newline(1)
+        cat(pander(res$summaries))
+        newline()
+        # ************* modif 1219
+        displaygraph(res$plots$plot) 
+        newline()
+}
+

@@ -1,0 +1,93 @@
+
+#' Data
+#' =====
+#' 
+
+data(mtcars)
+head(mtcars)
+mtcars$amf <- factor(ifelse(mtcars$am == 1, "a", "m"))
+
+
+
+
+
+#'
+#'Equations
+#' ========================================================================
+
+#+ def
+regeq <- function(mod, digits = 3, math = FALSE, displaymath = TRUE) {
+        co <- coef(mod)
+        response <- attr(mod$terms, "variables")[[2]]
+        predictors <- names(co)
+        if (math) {
+                prefix <- ifelse(displaymath, "$$", "$")
+                suffix <- prefix
+                sepcoeff <- "\\cdot "
+        }else{
+                prefix <- ""
+                suffix <- ""
+                sepcoeff <- " " 
+        }
+        
+        # function for constructing the body
+        partialeq <- function(x, predname) {
+                op <- ifelse(sign(x) >=0, "+", "-")
+                paste(paste(op, format(abs(x), digits = digits)),
+                      predname,
+                      sep = sepcoeff)
+        }
+        
+        bodyeq <- paste( mapply(partialeq, co[-1], predictors[-1]), collapse = " ")
+        
+        equa <- paste(response,
+                      "=",
+                      format(co[1], digits = digits),
+                      bodyeq
+        )
+        paste0(prefix, equa, suffix)
+}
+
+#' tests
+#' ------
+
+
+mod <- lm(mpg ~ wt + cyl + amf*wt, data = mtcars)
+mod2 <- lm(mpg ~ wt + cyl + amf, data = mtcars)
+
+
+regeq(mod)
+regeq(mod, math = TRUE)
+regeq(mod, math = TRUE, displaymath = FALSE)
+regeq(mod2)
+regeq(mod, math = TRUE)
+regeq(mod, math = TRUE, displaymath = FALSE)
+
+
+# tries
+names(mod)
+
+mod$terms
+mod$residuals
+mod$coefficients
+mod$effects
+mod$rank
+mod$assign
+mod$qr
+mod$contrasts
+mod$xlevels
+mod$call
+mod$terms
+attr(mod$terms, "variables")[[2]]
+
+mod$x
+
+
+sm <- summary(mod)
+
+names(sm)
+sm$terms
+sm$df
+sm$coefficients
+
+

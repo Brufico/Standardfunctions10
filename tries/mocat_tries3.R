@@ -98,13 +98,18 @@ displaygraph <- function(one.graph,
 #' 
 
 mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NULL,
-                   ranksok= c(1, 5) ) {
+                   fill = sfdefault("filldefault"), colorannots = sfdefault("colorannots1"),
+                   rankscale = "log", # "normal", "inverse", "log"
+                   ranksok= c(1, 5), # elimination des valeurs aberrantes 
+                   maxrankgraph = 3 ) {
         
         variables <- grep(paste0("^" , prefix), 
                           colnames(dataf), 
                           value = TRUE) # => get the relevant cols names
         if (is.null(valvect)) {valvect <- variables}
-        if (is.null(valshort)) {valshort <- valvect}
+        if (is.null(valshort)) {
+                valshort <- substring(variables, nchar(prefix) + 1, 100)
+                }
         if (is.null(valname)) {valname <- prefix}
         
         # verify input---------------------------------------------------------
@@ -139,18 +144,18 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         {isuseful[i] <- !all(is.na(dataf[i, ]))}
         dataf <- dataf[isuseful, ]
         
-             
-        
-        ncases <- nrow(dataf) # nombre de cas
+
+        ncases <- nrow(dataf) # nombre de cas (individus répondants)
         
         ## long format for the ranks dfrm, for tables and graphs: 
-        lresdf <- melt(dataf)
+        lresdf <- reshape2::melt(dataf)
         lresdf <- nonadf(lresdf,"value") # get rid of NA's
         
         # make tables: -------------------------------------------------------
         # 
         # a) individuals and ranks ...........................................
-        # compute % of individuals and citations explicitly, record the variable values in lims
+        # compute % of individuals and citations explicitly, 
+        # record the variable values in lims
         restable <- group_by(lresdf, variable) %>%
                 summarise(nbcit = n(),
                           rangmed = median(value)) %>%
@@ -163,7 +168,8 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         restable$shortname <- vlookup(restable$variable, searchtable = corrtable,
                                       searchcol = "variable", returncol = "valshort")
         
-        # a) citations by ranks ...........................................
+        # b) citations by ranks ...........................................
+        # Rem : NOT ideal, to be improved with tidy eval
         restable0 <-  lresdf  %>%
                 group_by(variable) %>%
                 summarise(nbcit0 = n()) %>%
@@ -180,11 +186,54 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
                 group_by(variable) %>%
                 summarise(nbcit3 = n()) %>%
                 mutate(percit3 = 100 * nbcit3 / sum(nbcit3))
+# 
+#         # citetable <- merge(restable0, restable1, by = "variable")
+#         # citetable <- merge(citetable, restable2, by = "variable")
+#         # citetable <- merge(citetable, restable3, by = "variable")
+#         # citetable <- arrange(citetable, desc(nbcit0), desc(nbcit1))
+
+        # better
+        citetable <- plyr::join_all(list(restable0, restable1, restable2, restable3),
+                                    by = "variable")
         
-        citetable <- merge(restable0, restable1, by = "variable")
-        citetable <- merge(citetable, restable2, by = "variable")
-        citetable <- merge(citetable, restable3, by = "variable")
-        citetable <- arrange(citetable, desc(nbcit0), desc(nbcit1))
+        # 
+        # # new summarising function (the whole thing is NOT WORKING)
+        # tbrank <- function(i, maxrank){
+        #         nbcitname <- paste0("nbcit", as.character(i))
+        #         percitname <- paste0("percit", as.character(i))
+        #         # filter data for cerain ranks
+        #         if (i == 0){
+        #                 message(0)
+        #                 fildf <- lresdf
+        #         }else if (i >= maxrank) {
+        #                 message("maxrank")
+        #                 fildf <- filter(lresdf, value >= !!maxrank)
+        #         }else{
+        #                 message( "NORMAL")
+        #                 fildf <- filter(lresdf, value == i)
+        #         }
+        #         ~# compute table
+        #         fildf %>%
+        #                 group_by(variable) %>%
+        #                 summarise(!!nbcitname := n()) %>% 
+        #                 mutate(!!percitname := 100 * !!as.name(nbcitname) / sum(!!as.name(nbcitname)))
+        # }
+        # 
+        # 
+        # list_table <- local(
+        #         {
+        #             lapply(0:maxrankgraph,
+        #                    tbrank,
+        #                    maxrankgraph)    
+        #         }
+        # )
+        # 
+        # 
+        # citetable <- plyr::join_all(list_table, by = "variable") # FAILS HERE*************
+        # # citetable <- plyr::join_all(list(restable0, restable1, restable2, restable3))
+        
+        
+        
         
         # printable table and graphs preparation ...............................
 
@@ -196,7 +245,7 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         names(graphlabels) <- lims # (to be sure and not to depend on order later)
         
         ptable <- select(restable, variable, nbcit, percases, percit, rangmed) #printable
-        colnames(ptable) <- c(valname, "citations", "% individus", "% citations", "rang median")
+        colnames(ptable) <- c(valname, "citations", "%individus", "%citations", "rang median")
         ptable[[1]] <- graphlabels
         
         
@@ -205,86 +254,116 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         # %individuals + ranks .................................................
         
         barp <- ggplot(restable, aes(variable, percases)) +
-                geom_bar(stat="identity") +
-                scale_x_discrete(limits = rev(lims), labels = graphlabels) + #labels = graphlabels
+                geom_bar(stat="identity", fill = fill) +
+                scale_x_discrete(limits = rev(lims), labels = graphlabels) + 
                 labs(y = "% individus", x = valname) +
                 coord_flip()
         
         violinp_lin <- ggplot(lresdf, aes(variable, value)) +
                 geom_violin() +
-                geom_jitter(height = 0.1, width = 0.5,
+                geom_jitter(height = 0.03, width = 0.3,
                             alpha = 0.4, color = "steelblue") +
                 geom_point(data = utable, aes(variable,rangmed),
                            color = "red", size = 4, alpha = 0.4) +
                 geom_line(data = utable, aes(variable,rangmed, group = 1),
-                          color = "red") +
+                          color = colorannots, alpha = 0.4) +
                 scale_x_discrete(labels = NULL,
                                  limits=rev(lims)) +
                 # scale_y_continuous(limits = c(0.5, 5.5)) +
                 labs(x = NULL, y = 'Rang citation') +
                 coord_flip()
         
-        violinp_inverse <- ggplot(lresdf, aes(variable, I(1 / value))) +
-                geom_violin() +
-                geom_jitter(height = 0.02, width = 0.3,
-                            alpha = 0.4, color = "steelblue") +
-                geom_point(data = utable, 
-                           aes(variable, I(1 / rangmed)),
-                           color = "red", size = 4, alpha = 0.4) +
-                geom_line(data = utable, 
-                          aes(variable, I(1 / rangmed), group = 1),
-                          color = "red") +
-                scale_y_reverse(breaks = 1 / 1:5,  #c(1, 0.5, 0.33, 0.25, 0.20),
+        # violinp_inverse <- ggplot(lresdf, aes(variable, I(1 / value))) +
+        #         geom_violin() +
+        #         geom_jitter(height = 0.02, width = 0.3,
+        #                     alpha = 0.4, color = "steelblue") +
+        #         geom_point(data = utable, 
+        #                    aes(variable, I(1 / rangmed)),
+        #                    color = "red", size = 4, alpha = 0.4) +
+        #         geom_line(data = utable, 
+        #                   aes(variable, I(1 / rangmed), group = 1),
+        #                   color = "red") +
+        #         scale_y_reverse(breaks = 1 / 1:5,  #c(1, 0.5, 0.33, 0.25, 0.20),
+        #                         labels = 1:5) +
+        #         # ylim(c(1.1, 0)) +
+        #         scale_x_discrete(labels = NULL,
+        #                          limits=rev(lims)) +
+        #         labs(x = NULL, y = 'Rang de citation (inversé)') +
+        #         coord_flip()
+        violinp_inverse <- violinp_lin +
+                scale_y_continuous( trans = 'reciprocal',
+                        breaks = c(1:5),  #c(1, 0.5, 0.33, 0.25, 0.20),
                                 labels = 1:5) +
-                # ylim(c(1.1, 0)) +
-                scale_x_discrete(labels = NULL,
-                                 limits=rev(lims)) +
-                labs(x = NULL, y = 'Rang de citation (inversé)') +
-                coord_flip()
+                labs(y = 'Rang de citation (inversé)')
+        violinp <- switch(rankscale,
+                          normal = violinp_lin,
+                          inverse = violinp_inverse, # incorrect for the moment
+                          log = violinp_lin + 
+                                  scale_y_log10(breaks = 1:5 ,
+                                                     labels = 1:5),
+                          violinp_lin
+        )
         
+        # violinp <- violinp_lin
+        # violinp <- violinp_inverse
+        # 
         # combined plot
-        indivrank_cp <- cowplot::plot_grid(barp, violinp_lin, 
+        indivrank_cp <- cowplot::plot_grid(barp, violinp, 
                                            nrow = 1, rel_widths = c(2,1),
                                            align = 'h', axis = 'b')
         
         
         # %citations, by ranks .................................................
+        # barchart faceted by rank  ----------------------------------------------------
         
-        lims2 <- citetable$variable # to ensure both plots have the same category order
-        graphlabels2 <- as.character(restable$shortname) # short names, in the same order as lims !! as character !
-        names(graphlabels2) <- lims # (to be sure and not to depend on order later)
         
-        barp0 <- ggplot(citetable, aes(variable, percit0)) +
-                geom_bar(stat="identity") +
-                scale_x_discrete(limits = rev(lims2), 
-                                 labels = graphlabels2) + #labels = graphlabels2
-                labs(y = "% cit. global", x = valname) +
-                coord_flip()
+        # modif rangs
+        # 
+        lresdf$rang <-factor(sapply(lresdf$value, 
+                                    function(x) {
+                                            ifelse(x < maxrankgraph, 
+                                                   yes = as.character(x), 
+                                                   no = paste0(as.character(maxrankgraph),"+" 
+                                                   ))}))
         
-        barp1 <- ggplot(citetable, aes(variable, percit1)) +
-                geom_bar(stat="identity") +
-                scale_x_discrete(NULL,
-                        limits = rev(lims2), labels = NULL) + # no labels
-                labs(y = "% cit. Rng = 1") +
-                coord_flip() 
+        lresdf [["variable"]] <- orderfact(lresdf, "variable")
         
-        barp2 <- ggplot(citetable, aes(variable, percit2)) +
-                geom_bar(stat="identity") +
-                scale_x_discrete(NULL,
-                                 limits = rev(lims2), labels = NULL) + # no labels
-                labs(y = "% cit. Rng = 2") +
-                coord_flip() 
+        levels(lresdf [["variable"]])
         
-        barp3 <- ggplot(citetable, aes(variable, percit2)) +
-                geom_bar(stat="identity") +
-                scale_x_discrete(NULL,
-                                 limits = rev(lims2), labels = NULL) + # no labels
-                labs(y = "% cit. Rng >= 3") +
-                coord_flip() 
+        graphlabs <- as.character(vlookup(levels(lresdf [["variable"]]), searchtable = corrtable,
+                                          searchcol = "variable", returncol = "valshort")) 
+        # short names, in the same order as lims !! as character !
         
-        cite_cp <- cowplot::plot_grid(barp0, barp1, barp2, barp3,
-                                      nrow = 1, rel_widths = c(2, 1, 1, 1),
-                                      align = 'h', axis = 'b')
+        # facetnames
+        rankvalues <- c(as.character(1:(maxrankgraph - 1)), 
+                        paste0(as.character(maxrankgraph),"+")) 
+        facetlabs  <-  c("Ensemble", paste("Rang =", rankvalues ))
+        names(facetlabs) <- c("(all)", rankvalues)
+        
+        # =================================================================================**************
+        # barplots with y = counts // proportions (generate both plots)
+        
+        bpbcount <- ggplot(lresdf, aes(variable, fill = rang))
+        
+        # proportion = y
+        bpbprop <- ggplot(lresdf, aes(variable, fill = rang, y = ..prop..,group = rang )) 
+        
+        morebar <- function(p, titre = "citations", xscalename = NULL) {
+                p +
+                        geom_bar() +
+                        facet_grid(rang ~ ., margins = TRUE, switch = "y", labeller = labeller(rang = facetlabs)) +
+                        labs(title = titre) + 
+                        scale_x_discrete(xscalename,
+                                         limits = levels(lresdf [["variable"]]),
+                                         labels = graphlabs) +
+                        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3),
+                              legend.position = "none", plot.title = element_text(hjust = 0.5))
+        }
+                
+        barfacetprop <- morebar(p = bpbprop)
+        barfacetcount <- morebar(p = bpbcount)
+        
+        
         
         
         
@@ -297,14 +376,15 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
                      table1 = citetable,
 
                      plot = indivrank_cp,
-                     plot1 = cite_cp
+                     plot1 = barfacetcount,
+                     plot2 = barfacetprop
                      )
 }
 
 
-
+# tests ===============================================================
 #' 
-#' tries
+#' tries, 
 #' =====
 #' 
 
@@ -314,15 +394,18 @@ varshort <- c("correspondance projet pro", "Mobilite géographique",
               "Manque d'experience", "mise en valeur competences", "Formation pas reconnue", 
               "formation_inadaptée", "salaire insuffisant","autres difficultes")
 
-res <- mocat1(df, prefix = "situation_difficultes_", 
-              valvect = variables, valshort = varshort)
+res <- mocat1(df, prefix = "situation_difficultes_" #,
+              # valvect = variables , 
+              # valshort = varshort,
+              # rankscale = "normal"
+              )
 # res <- mocat1(df, prefix = "situation_difficultes_")
 res$name
 res$ptable
 res$table1
 res$plot
 res$plot1
-
+res$plot2
 # ====================================================================
 
 # 

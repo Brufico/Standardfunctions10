@@ -89,7 +89,8 @@ if (choicedata == "testdata"){
 }
 
 
-# start trying ---------------------------------------------------------------
+
+# start trying mods for the graphs ===========================================
 dataf <- df
 prefix <- "pf_"            #"situation_difficultes_"
 ranksok <-  c(1, 5)
@@ -105,14 +106,14 @@ varshort <- c("correspondance projet pro", "Mobilite géographique",
               "Manque d'experience", "mise en valeur competences", "Formation pas reconnue", 
               "formation_inadaptée", "salaire insuffisant","autres difficultes")
 
-varshort <- substring(variables, nchar(prefix) + 1, 8)
+varshort <- substring(variables, nchar(prefix) + 1, 100)
 corrtable <- data.frame(variable = variables,
                         valvect = variables,
                         valshort = varshort )
 
 dataf <- dataf[ , variables]
 
-# remove incorrect ranks
+# remove incorrect ranks (outside ranksok)
 for (i in 1: nrow(dataf)) {
         for(j in 1:ncol(dataf)) {
                 if (!is.na(dataf[i, j])) {
@@ -131,29 +132,41 @@ dataf <- dataf[isuseful, ]
 
 
 
-ncases <- nrow(dataf) # nombre de cas
+ncases <- nrow(dataf) # nombre de cas (citations)
 
 ## long format for the ranks dfrm, for tables and graphs: 
 lresdf <- melt(dataf)
 lresdf <- nonadf(lresdf,"value") # get rid of NA's
 
 
-# plot ------------------------------------------------------------------------
 
-# # facetnames
-# facetlabs  <-  c("ensemble", "Rang = 1", "Rang = 2", "Rang = 3+")
-# names(facetlabs) <- 0:3
-# 
-# ggplot(lresdf, aes(diffname , nbcit)) + 
-#         geom_bar()+ 
-#         facet_grid(rang ~ ., labeller = labeller(rang = facetlabs)) +
-#         theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3))
-# 
+# barchart flipped + violin----------------------------------------------------
+# data changes
 
-#simple========
+
+
+
+bpbcount <- ggplot(lresdf, aes(variable, fill = rang)) + 
+        geom_bar()
+
+
+
+
+
+
+
+# barchart faceted by rank  ----------------------------------------------------
+
+
 # modif rangs
 # 
-lresdf$rang <-factor(sapply(lresdf$value, function(x) ifelse(x < 3, as.character(x), "3+")))
+lresdf$rang <-factor(sapply(lresdf$value, 
+                            function(x) {
+                                    ifelse(x < maxrankgraph, 
+                                           yes = as.character(x), 
+                                           no = paste0(as.character(maxrankgraph),"+" 
+                                                  ))}))
+
 lresdf [["variable"]] <- orderfact(lresdf, "variable")
 
 levels(lresdf [["variable"]])
@@ -165,15 +178,19 @@ graphlabs <- as.character(vlookup(levels(lresdf [["variable"]]), searchtable = c
 # 
 
 # facetnames
-facetlabs  <-  c("Ensemble", "Rang = 1", "Rang = 2", "Rang = 3+")
-names(facetlabs) <- c("(all)", "1", "2", "3+")
+rankvalues <- c(as.character(1:(maxrankgraph - 1)), 
+                paste0(as.character(maxrankgraph),"+")) 
+facetlabs  <-  c("Ensemble", paste("Rang =", rankvalues ))
+names(facetlabs) <- c("(all)", rankvalues)
 
+# counts = y
 bpbcount <- ggplot(lresdf, aes(variable, fill = rang)) + 
         geom_bar()
+# proportion = y
 bpbprop <- ggplot(lresdf, aes(variable, fill = rang, y = ..prop..,group = rang )) + 
         geom_bar()
 
-prop_y <- FALSE
+prop_y <- TRUE
 if(prop_y) {bpb <- bpbprop
 }else{bpb <- bpbcount}
 
