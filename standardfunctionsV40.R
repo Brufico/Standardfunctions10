@@ -1996,6 +1996,15 @@ playres <- function(resname = resname, res = res, ...){ # headerlevel = 0,
 
 play_cat1 <- function(res, hastitle = TRUE, custom = FALSE, 
                       restitle = "variable ",  headerlevel = 0,  ...){
+        larg <- list(...) #additional arguments
+        
+        if ("plot" %in% names(larg)) {
+                displayplot <- larg[["plot"]] 
+        } else {
+                displayplot <- "plot"
+        }
+        
+        
         fullname <- res$name
         varnames <- resnamevars(fullname)
         if (hastitle) {
@@ -2012,7 +2021,7 @@ play_cat1 <- function(res, hastitle = TRUE, custom = FALSE,
         cat(pander(res$tables$ptable, caption = varnames)) 
         newline(1)
         # ************* modif 1219
-        displaygraph(res$plots$plot1)
+        displaygraph(res$plots[[displayplot]])
         newline()
 }
 
@@ -2044,6 +2053,14 @@ play_num1c <-  function(res, hastitle = TRUE, custom = FALSE,
 
 play_num1d <-  function(res, hastitle = TRUE, custom = FALSE, 
                         restitle = "variable ", headerlevel = 0, ...){
+        larg <- list(...) #additional arguments
+        
+        if ("plot" %in% names(larg)) {
+                displayplot <- larg[["plot"]] 
+        } else {
+                displayplot <- "plot"
+        }
+        
         fullname <- res$name
         varnames <- resnamevars(fullname)
         if (hastitle) {
@@ -2063,7 +2080,7 @@ play_num1d <-  function(res, hastitle = TRUE, custom = FALSE,
         cat(pander(res$summaries))
         newline()
         # ************* modif 1219
-        displaygraph(res$plots$plot) 
+        displaygraph(res$plots[[displayplot]]) 
         newline()
 }
 
