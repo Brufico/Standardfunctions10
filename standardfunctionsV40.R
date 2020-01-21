@@ -10,17 +10,17 @@
 #'       * mocat1 modifiée (27 décembre 2019)
 #'      
 #'output:
+#'  pdf_document:
+#'    toc: yes
+#'    number_sections: true
 #'  html_document:
 #'    number_sections: yes
 #'    toc: yes
 #'    theme: readable
-#'  pdf_document:
-#'    toc: yes
-#'    number_sections: true
 #'  word_document: default
 #'---
 
-#'----------------------------------------------
+
 
 
 #+ init, include=FALSE
@@ -102,7 +102,8 @@ if(sfdefault("language") == "french") {
 
 #+ progoptions, results = "hide"
 sfdefault("reportNA", FALSE) # report number of NA's in a variable?
-sfdefault("orderfreq", TRUE) # Should we order the levels of a factor before graphing?
+sfdefault("orderfreq", TRUE) # Should we order the levels of a factor before 
+                                # graphing?
 
 #' display options
 
@@ -114,7 +115,8 @@ sfdefault("colorannots1", "red")
 # max number of plots
 sfdefault("maxplots", 3)
 # options discrete charts
-sfdefault("cat1plots", c("pie", "bar")) # which plots to store for 1 cat var #c("bar", "pie")
+sfdefault("cat1plots", c("pie", "bar")) # which plots to store for 1 cat var 
+                                        #c("bar", "pie")
 
 # options bar chart
 sfdefault("discretebarwidth", 0.5)
@@ -123,7 +125,8 @@ sfdefault("discretebarwidth", 0.5)
 sfdefault("scaletitle" , "") # title for the legend of the pie
 sfdefault("dolabel" , TRUE) # label the slices with %
 sfdefault("minperc" , 5) # minimal % value for showing a lable
-sfdefault("labpos" , 1.15) # label position relative to the center (0=center, 1 = plot radius)
+sfdefault("labpos" , 1.15) # label position relative to the center 
+                                # (0=center, 1 = plot radius)
 
 # analysis names options
 sfdefault("varsep" , "_x_") # variable separator in names of analysis
@@ -139,26 +142,28 @@ sfdefault("funsep" , "_f_") # function separator in names of analysis
 #' =============================================
 
 
-# make a result list. unsupplied elements assigned default=NULL and not included in result list
-make.result <- function(name = NULL,
-                        caption = NULL,
-                        funname = NULL, # name of the function which produced the result
-                        varnames =NULL, # vector (or better = named vector) of variable names
-                        numcases = NULL, # number of non-NA cases
-                        summaries = NULL, # numerical summaries (quantitative variables)
-                        levels = NULL,
-                        levels2 = NULL,
-                        breaks = NULL,
-                        closed= NULL,
-                        tables = list(), # * named list of tables, including
-                                        # table # default tabl, 
-                                        # ptableL, # printable table
-                        details = NULL, # additional info (mostly in table form)
-                        tests = list(), # * list of tests objetcts including
-                                        #chi2,anova,
-                        plots =list() # * named list of plots, including
-                                        # plot, # default plot
-                        ) {
+# make a result list. unsupplied elements assigned default=NULL and not 
+# included in result list
+make.result <- function(
+        name = NULL,
+        caption = NULL,
+        funname = NULL, # name of the function which produced the result
+        varnames =NULL, # vector (or better = named vector) of variable names
+        numcases = NULL, # number of non-NA cases
+        summaries = NULL, # numerical summaries (quantitative variables)
+        levels = NULL,
+        levels2 = NULL,
+        breaks = NULL,
+        closed= NULL,
+        tables = list(), # * named list of tables, including
+        # table # default tabl, 
+        # ptableL, # printable table
+        details = NULL, # additional info (mostly in table form)
+        tests = list(), # * list of tests objetcts including
+        #chi2,anova,
+        plots =list() # * named list of plots, including
+        # plot, # default plot
+) {
         # get arg - values list
         lenv <- as.list(environment())
         # remove NULL values from list
@@ -183,7 +188,8 @@ make.result <- function(name = NULL,
 
 # function ==> oneres MODIFIEE: Ne marche plus
 initresult <- function() {
-        allresults <- list(.whatsit = "resultlist") # encapsulated list of results
+        allresults <- list(.whatsit = "resultlist") 
+                                # encapsulated list of results
         # store or retrieve one result
         oneres <- function(rname, rval) {
                 if (missing(rname)) {
@@ -208,12 +214,14 @@ initresult <- function() {
 }
 
 
-# assigning the modifier and accessor function to 'result, and the list of result to allresults
+# assigning the modifier and accessor function to 'result, and the 
+# list of result to allresults
 resultfuns <- initresult()
 result <- resultfuns[[1]]
 allres <- resultfuns[[2]]
 
-# get list of names from the list of results (finds and returns the "external" storage names)
+# get list of names from the list of results (finds and returns the 
+# "external" storage names)
 allresnames <- function() {
         names(allres())[-1]
 }
@@ -223,8 +231,10 @@ allresnames <- function() {
 #'
 #' for each statistical function *funname* that returns a set of results, call:
 #' 
-#' * result(*codename*, funname (arguments...) ) to **store** the results set under the name *codename*.
-#' * result(*codename*) **retrieves and returns** the results set stored under the name *codename*
+#' * result(*codename*, funname (arguments...) ) to **store** the results set 
+#' under the name *codename*.
+#' * result(*codename*) **retrieves and returns** the results set stored under 
+#' the name *codename*
 #' * allresnames() returns a vector of names for stored results sets
 #' 
 
@@ -232,7 +242,8 @@ allresnames <- function() {
 #' Generating a unique name for an analysis
 #' ----------------------------------------
 
-# make a result/analysis name: vector of variable names + generating function name
+# make a result/analysis name: vector of variable names + generating 
+# function name
 makeresname <- function(varnames, funname) {
         if (length(varnames) > 1) {
                 varnames1 <- paste(varnames, collapse = sfdefault("varsep"))
@@ -344,9 +355,8 @@ vlookup <- function(value, searchtable, searchcol = 1, returncol= 2){
 #'
 #'* from a dataframe/tbl
 #'
-#' ...
-#' ~ is a succession of variable names which we want to filter out the NAs
-#' from ( ex: nonadf(dataframe, "age", "revenue"))
+#' the ellipsis ...is a succession of variable names which we want to filter 
+#' out the NAs from ( ex: nonadf(dataframe, "age", "revenue"))
 #'
 nonadf <- function(dataf, ..., useNA = "no") {
         lvar = list(...)
@@ -430,10 +440,12 @@ sumvector <- function (x, extent = "long",
 
 
 
-#' Combined summaries for different variables in a dataframe, for all individuals
+#' Combined summaries for different variables in a dataframe, for all 
+#' individuals
 cbsummaries <- function (dataf, vnames, extent = "long") {
         # vnames = a vector of variable names (each a numeric variable of dataf)
-        lsum = lapply(vnames, function(nam) sumvector(dataf[[nam]], extent = extent ))
+        lsum = lapply(vnames, 
+                      function(nam) sumvector(dataf[[nam]], extent = extent ))
         df <- do.call(what = data.frame, args = lsum)
         colnames(df) <- vnames
         # rownames(df) <- namesum
@@ -467,13 +479,15 @@ condsummaries <- function(dataf, vname, fname,  extent = "long") {
 
 
 #' Frequency tables
-#' --------------------------------------------------------------
+#' ---------------------------------------------------------------------------
 
 
 # joint frequency table
 jointfreqtable <- function(dataf, nomfact1, nomfact2, useNA = "no") {
         if (useNA == "no") {
-                dataf <- dataf[!is.na(dataf[[nomfact1]]) & !is.na(dataf[[nomfact2]]) , ]
+                dataf <- dataf[
+                        !is.na(dataf[[nomfact1]]) & 
+                                !is.na(dataf[[nomfact2]]) , ]
         }
         table(dataf[[nomfact1]], dataf[[nomfact2]] , useNA = useNA)
 }
@@ -482,12 +496,16 @@ jointfreqtable <- function(dataf, nomfact1, nomfact2, useNA = "no") {
 # new . fonctionne avec des tbl_df aussi
 condfreqtable <- function(dataf, nomfact1, nomfact2, useNA = "no") {
         if (useNA == "no") {
-                dataf <- dataf[!is.na(dataf[[nomfact1]]) & !is.na(dataf[[nomfact2]]) , ]
+                dataf <- dataf[
+                        !is.na(dataf[[nomfact1]]) & 
+                                !is.na(dataf[[nomfact2]]) , ]
         }
-        dt <-prop.table(table(dataf[[nomfact1]], dataf[[nomfact2]] , useNA = useNA),
+        dt <-prop.table(table(dataf[[nomfact1]], dataf[[nomfact2]] , 
+                              useNA = useNA),
                         margin = 1)
         dt2 <- as.data.frame(dt)
-        names(dt2) <- c(nomfact1, nomfact2, "perc") # compatibilite avec la def ancienne
+        names(dt2) <- c(nomfact1, nomfact2, "perc") # compatibilite avec 
+                                                        #la def ancienne
         dt2
 }
 
@@ -496,7 +514,7 @@ condfreqtable <- function(dataf, nomfact1, nomfact2, useNA = "no") {
 
 #'
 #' Reordering factors
-#' -------------------------------------------------
+#' ----------------------------------------------------------------------------
 #'
 # new definition seems ok for both data.frame and tbl_df
 orderfact <- function(dataf, nomfact, orderfreq = TRUE, orderdesc = TRUE,
@@ -532,21 +550,140 @@ orderfact <- function(dataf, nomfact, orderfreq = TRUE, orderdesc = TRUE,
                         resfact <- dataf[[nomfact]]
                 }
         } else {
-                resfact <- factor(dataf[[nomfact]], levels = nlevels) ### modfié ????????????
+                resfact <- factor(dataf[[nomfact]], levels = nlevels) ### modfié 
+                                                                ### ????????????
         }
         # retour
         resfact
 }
 
 #'
+#' Recoding factors
+#' ----------------------------------------------------------------------------
+#'
+#' ### Main function
+#' 
+library(dplyr) # necessary
+
+# recode
+recode_order <- function(dtable, namefact, namenewfact, listrecode, 
+                         lastlevel = FALSE) {
+        if (!missing(listrecode)) {
+                if (length(listrecode) >= 0) {
+                        # recoding
+                        recode <- dplyr::recode
+                        dtable[[namenewfact]] <- 
+                                do.call( "recode",
+                                         c(list(.x = dtable[[namefact]]), 
+                                           listrecode) )    
+                }
+                
+        }
+        
+        #ordering by relative frequency
+        dtable[[namenewfact]] <- orderfact(dataf = dtable, nomfact = namenewfact)
+        # put the "lastlevel" (i.e. "other" catagory) last in the levels
+        if (lastlevel != FALSE) {
+                dtable[[namenewfact]] <- 
+                        factor(dtable[[namenewfact]],
+                               levels = c(
+                                       setdiff(levels(dtable[[namenewfact]]),
+                                               lastlevel),
+                                       lastlevel
+                               )
+                        )
+        }
+        
+        return(dtable)
+}
+
+# verification
+recode_verif <- function(dataf, fname) {
+        cat("levels : ")
+        print(levels(dataf[[fname]]))
+        cat("tables : ")
+        print(table(dataf[[fname]]))
+}
+
+#'
+#' ### Helper function `recode_prep`
+#'
+
+# generate + print tentative recode function call + verification code
+recode_prep <- function(dataf, # must be the name (unquoted) of the dataframe
+                        fname, newfname, 
+                        min_percent = 0.03, min_label = "Other") {
+        dataname <- enexpr(dataf)
+        
+        ptbl <- prop.table(table(dataf[[fname]] ))
+        ptbl <- sort(ptbl, decreasing = TRUE)
+        cat(pander::pander(ptbl)) # show initial table
+        
+        make_recodelist <- function(ptbl, fname, min_percent, min_label) {
+                # generate + print tentative list definition
+                lv = names(ptbl) # current levels
+                labs <- ifelse(ptbl >= min_percent, 
+                               names(ptbl), 
+                               min_label) # new levels
+                # vector of lines i list definition (one for each level)
+                vlines <- 
+                        paste0('`', 
+                               lv, 
+                               '`', 
+                               ' = "', labs, '"' )
+                # '\n')
+                
+                # add commas + newline at the end of each line save the last
+                nbln <- length(vlines)
+                eol <- c(rep(',\n', times = nbln-1), '\n')
+                vlines <-paste0(vlines, eol) 
+                # add begin and end of list
+                vlines <- c('list( \n' , vlines, ' ), \n')
+                return(vlines)
+        }
+        # beginning of call
+        make_begincode <- function(tablename, namefact, namenewfact){
+                c(
+                        '# recodage\n',
+                        sprintf('%s <- recode_order(\n', 
+                                as.character(tablename)),
+                        sprintf('dtable = %s ,"%s", "%s",\n listrecode = ',
+                                as.character(tablename), 
+                                namefact, namenewfact)      
+                )
+        }
+        # end of call + verification
+        make_endcode <- function(dataname, newfname, min_label){
+                c(sprintf('lastlevel = "%s"', min_label),
+                  '\n)\n',
+                  '# verification',
+                  sprintf('\nrecode_verif(dataf = %s, fname = "%s")\n',
+                          as.character(dataname), newfname)
+                )
+        }
+        
+        # putting the bits together
+        all_lines <- c(
+                make_begincode(dataname, fname, newfname),
+                make_recodelist(ptbl = ptbl, fname, min_percent, min_label),
+                make_endcode(dataname, newfname, min_label)
+        )
+        # prints code to use
+        cat(all_lines)
+}
+
+
+
+
+#'
 #' Statistical Testing functions
-#' ---------------------------------------------------------------
+#'=============================================================================
 
 # try.chisq.test ==> essaye un test du chi2, et si il genere un warning
 # (conditions approximation du chi2 non satisfaites), alors, calculer la
 # p-valeur par simulation
 # si keep-all, retourne les 2 tests (chi2 et
-# simulation, une valeur logique indiquant le warning, et le warning lui-m?me).
+# simulation, une valeur logique indiquant le warning, et le warning lui-meme).
 # Le test prefere est alors list? comme test1
 
 try.chisq.test <- function(..., keep.all = TRUE) {
@@ -576,9 +713,6 @@ try.chisq.test <- function(..., keep.all = TRUE) {
 }
 
 
-
-#'-----------------------------------------------------------------
-#'
 
 
 #' Graphing functions
@@ -667,7 +801,8 @@ piechart <- function(data, var,
                         geom_bar(mapping, width = 1, color="black") +
                         scale_x_continuous(labels=NULL, breaks=NULL) +
                         scale_y_continuous(labels=NULL, breaks=NULL) +
-                        scale_fill_discrete(guide = guide_legend(title = scaletitle)) +
+                        scale_fill_discrete(
+                                guide = guide_legend(title = scaletitle)) +
                         coord_polar(theta = "y") +
                         xlab(NULL) +
                         ylab(NULL)
@@ -676,15 +811,19 @@ piechart <- function(data, var,
                         xl <- xmin+ labpos * (xmax-xmin)
                         yl <- (ymax + ymin)/2
                         perc <- 100 * round(count/sum(count) , 2)
-                        perclabs <- ifelse( perc > minperc, paste0(as.character(perc),"%"), "")
+                        perclabs <- ifelse( perc > minperc, 
+                                            paste0(as.character(perc),"%"), "")
                         data.frame(xl, yl,perc, perclabs)
                 } )
-                if (dolabel) {pie <- pie + geom_text(data = lbldf, aes(x=xl, y = yl, label = perclabs))}
+                if (dolabel) {pie <- pie + 
+                        geom_text(data = lbldf, 
+                                  aes(x=xl, y = yl, label = perclabs))}
                 pie
 
         }
         # use local function (passing mapping)
-        piechart1(data, aes_(1, fill = as.name(var)), scaletitle, dolabel, minperc, labpos)
+        piechart1(data, aes_(1, fill = as.name(var)), 
+                  scaletitle, dolabel, minperc, labpos)
 }
 
 # Try
@@ -701,15 +840,20 @@ piechart <- function(data, var,
 #'
 chistodens <- function(dataf, nomvar,
                        usedensity = FALSE, usendensity =FALSE, plot_density = FALSE,
-                       fillhist = sfdefault("filldefault"), color_density = "red", digits = 2, # ? modifier
-                       bins = NULL, closed = NULL, ...) {  # ... = addtl arguments for geom_hist
+                       fillhist = sfdefault("filldefault"), 
+                       color_density = "red", digits = 2, # ? modifier
+                       bins = NULL, closed = NULL, ...) {  
+        # ... = addtl arguments for geom_hist
+        
         if (plot_density) {
                 usedensity <- TRUE
         } # plot_density overrides usedensity, density overrides ndensity
         if (usedensity){
                 usendensity <- FALSE
         }
-        # bins = Null, integer, or a function name : "nclass.Sturges", "nclass.FD" , "nclass.scott"
+        # bins = Null, integer, or a function name : "nclass.Sturges", 
+        #                                               "nclass.FD" , 
+        #                                               "nclass.scott"
         # get or compute bins (as integer)
         if (!is.null(bins)) {
                 if ("character" %in% class(bins) ) {
@@ -719,11 +863,14 @@ chistodens <- function(dataf, nomvar,
         }
         # make histogram
         p <- ggplot(dataf, aes_(as.name(nomvar))) +
-                if (usedensity) {geom_histogram(aes(y=..density..),
-                                                bins = bins, fill = fillhist,...)
-                } else if (usendensity) {geom_histogram(aes(y=..ndensity..),
-                                                        bins = bins, fill = fillhist,...)
-                } else {geom_histogram(bins = bins, fill = fillhist, ...)}
+                if (usedensity) {
+                        geom_histogram(aes(y=..density..),
+                                       bins = bins, fill = fillhist,...)
+                } else if (usendensity) {
+                        geom_histogram(aes(y=..ndensity..),
+                                       bins = bins, fill = fillhist,...)
+                } else {geom_histogram(bins = bins, fill = fillhist, ...)
+                }
 
         if (plot_density) {p <- p + geom_density(color=color_density) }
         p
@@ -734,7 +881,8 @@ chistodens <- function(dataf, nomvar,
 #' ---------------------------------------
 #'
 cbyfboxjit <- function(dataf, varf, varc, useNA = "no",
-                       labellayer = "", labelall = "All values", labelgroups = "by goup") {
+                       labellayer = "", labelall = "All values", 
+                       labelgroups = "by goup") {
 
         if (useNA == "no") {
                 dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
@@ -753,15 +901,19 @@ cbyfboxjit <- function(dataf, varf, varc, useNA = "no",
 #' --------------------------------------------
 #
 cbydboxjit <- function(dataf, vard, varc, useNA = "no",
-                       labellayer = "", labelall = "All values", labelgroups = "by goup") {
+                       labellayer = "", labelall = "All values", 
+                       labelgroups = "by goup") {
         # dataf <- as.data.frame(dataf) # same problem with tbl_df
         if (useNA == "no") {
                 dataf <- dataf[!is.na(dataf[[vard]]) & !is.na(dataf[[varc]]), ]
         }
         dataf$fact_vard. <- factor(dataf[[vard]])
-        ggplot(dataf,aes_(as.name(vard) , as.name(varc), color=quote(fact_vard.))) +
-                geom_boxplot(aes(group = 1, fill =  labelall), outlier.colour = "gray") +
-                geom_boxplot(aes(fill = labelgroups), varwidth = TRUE, outlier.colour = "gray") +
+        ggplot(dataf,
+               aes_(as.name(vard) , as.name(varc), color=quote(fact_vard.))) +
+                geom_boxplot(aes(group = 1, fill =  labelall),
+                             outlier.colour = "gray") +
+                geom_boxplot(aes(fill = labelgroups), 
+                             varwidth = TRUE, outlier.colour = "gray") +
                 geom_jitter( width =.5, alpha=.5) +
                 labs(fill = labellayer)
 }
@@ -776,7 +928,9 @@ cbyfdensity <- function(dataf, varf, varc, useNA = "no") {
                 dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
         }
         if (!is.factor(dataf[[varf]])) {dataf[[varf]] <- factor(dataf[[varf]])}
-        ggplot(dataf,aes_(as.name(varc), y=quote(..density..), fill=as.name(varf))) +
+        ggplot(dataf,aes_(as.name(varc),
+                          y=quote(..density..), 
+                          fill=as.name(varf))) +
                 geom_density(alpha = 0.3)
 }
 
@@ -789,7 +943,9 @@ cbyffreqpoly <- function(dataf, varf, varc, useNA = "no", size = 1) {
                 dataf <- dataf[!is.na(dataf[[varf]]) & !is.na(dataf[[varc]]), ]
         }
         if (!is.factor(dataf[[varf]])) {dataf[[varf]] <- factor(dataf[[varf]])}
-        ggplot(dataf,aes_(as.name(varc), y=quote(..ndensity..), color=as.name(varf))) +
+        ggplot(dataf,aes_(as.name(varc), 
+                          y=quote(..ndensity..), 
+                          color=as.name(varf))) +
                 geom_freqpoly(size = size)
 }
 
@@ -808,9 +964,16 @@ cbyfhistogram <- function(dataf, varf, varc, useNA = "no",
 
         # s <- condsummaries(dataf,vname = varc, fname = varf )
 
-        p <- if (usedensity) {ggplot(dataf,aes_(as.name(varc), y=quote(..density..), fill=as.name(varf)))
-        } else if (usendensity) {ggplot(dataf,aes_(as.name(varc), y=quote(..ndensity..), fill=as.name(varf)))
-        } else {ggplot(dataf,aes_(as.name(varc), fill=as.name(varf)))}
+        p <- if (usedensity) {ggplot(dataf,
+                                     aes_(as.name(varc), 
+                                          y=quote(..density..), 
+                                          fill=as.name(varf)))
+        } else if (usendensity) {ggplot(dataf,
+                                        aes_(as.name(varc), 
+                                             y=quote(..ndensity..), 
+                                             fill=as.name(varf)))
+        } else {ggplot(dataf,aes_(as.name(varc), 
+                                  fill=as.name(varf)))}
         p <- p+ geom_histogram(..., position = "dodge")
         p
 }
@@ -828,9 +991,13 @@ cbyffachistogram <- function(dataf, varf, varc, useNA = "no",
 
 
         p <- if (usedensity) {
-                ggplot(dataf,aes_(as.name(varc), y=quote(..density..), fill=as.name(varf)))
+                ggplot(dataf,aes_(as.name(varc), 
+                                  y=quote(..density..), 
+                                  fill=as.name(varf)))
         } else if (usendensity){
-                ggplot(dataf,aes_(as.name(varc), y=quote(..ndensity..), fill=as.name(varf)))
+                ggplot(dataf,aes_(as.name(varc), 
+                                  y=quote(..ndensity..), 
+                                  fill=as.name(varf)))
         } else {
                 ggplot(dataf,aes_(as.name(varc), fill=as.name(varf)))
         }
@@ -845,7 +1012,7 @@ cbyffachistogram <- function(dataf, varf, varc, useNA = "no",
 
 
 #'
-#' Multiple plot function
+#' Multiple plot function (obsolete - replace ??)
 #' ---------------------------
 #
 # ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
@@ -879,15 +1046,19 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
         } else {
                 # Set up the page
                 grid.newpage()
-                pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+                pushViewport(viewport(layout = grid.layout(nrow(layout), 
+                                                           ncol(layout))))
 
                 # Make each plot, in the correct location
                 for (i in 1:numPlots) {
-                        # Get the i,j matrix positions of the regions that contain this subplot
-                        matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+                        # Get the i,j matrix positions of the regions that 
+                        # contain this subplot
+                        matchidx <- as.data.frame(which(layout == i, 
+                                                        arr.ind = TRUE))
 
-                        print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                                        layout.pos.col = matchidx$col))
+                        print(plots[[i]], 
+                              vp = viewport(layout.pos.row = matchidx$row,
+                                            layout.pos.col = matchidx$col))
                 }
         }
 }
@@ -896,9 +1067,6 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 
 
 
-#' -------------------------------------
-#'
-
 
 #'
 #' Main analysis functions
@@ -906,9 +1074,11 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 #'
 
 #' **Resultat desires:**
+#' 
 #' *  **une variable non structurée** : question ouverte
 #'     * verbatim : liste des réponses
-#'     * verbatim2 : liste : col 1 = valeurs d'un facteur, col2 = réponses correspondantes
+#'     * verbatim2 : liste : col 1 = valeurs d'un facteur, 
+#'     col2 = réponses correspondantes
 #'
 #' *  **une variable**
 #'     * cat1  1 facteur
@@ -956,7 +1126,7 @@ verbatim2 <- function(dataf, nomfact, bynomfact,  useNA = "no"){
         numc <- nrow(dataf)
         ptable <- dataf[order(dataf[[bynomfact]]), c(bynomfact, nomfact)]
         colnames(ptable) <- c( bynomfact, "Verbatim")
-        make.result(name = makeresname(c(nomfact,bynomfact), "verbatim2" ) , #modifié
+        make.result(name = makeresname(c(nomfact,bynomfact), "verbatim2"), #mod.
                     funname = verbatim2,
                     varnames = c(nomfact = nomfact, bynomfact = bynomfact),
                     tables = list(ptable = ptable), # *************modif 1219
@@ -988,7 +1158,8 @@ cat1 <- function(dataf, nomfact, useNA = "no",
         # orderfreq = TRUE  or FALSE,
         # descorder =TRUE or FALSE
         # ordervar = variable to use for ordering,
-        # orderval = value if the ordering variable is the frequency of ordervar == value
+        # orderval = value if the ordering variable is the frequency of 
+        # ordervar == value
 
         # reordering the levels:
         dataf[[nomfact]] <-
@@ -1012,7 +1183,7 @@ cat1 <- function(dataf, nomfact, useNA = "no",
         # printable table
         ptb <- tbl[1:3]
         colnames(ptb) <- c(nomfact, "Freq.", "Rel.Freq")
-        # put relative freq in % units ***************************************Edit
+        # put relative freq in % units ***********************************Edit
         ptb[[3]] <- 100 * ptb[[3]]
 
         # Goodness-of-Fit chi-square test for a uniform distribution
@@ -1030,7 +1201,8 @@ cat1 <- function(dataf, nomfact, useNA = "no",
         # # base ggplot
         # pt <- if (rfreq) {
         #         ggplot(dataf1,
-        #                aes_(as.name(nomfact), quote(100 * ..count.. / sum(..count..))))
+        #                aes_(as.name(nomfact), 
+        #                     quote(100 * ..count.. / sum(..count..))))
         # } else {
         #         ggplot(dataf1,
         #                aes_(as.name(nomfact)))
@@ -1040,9 +1212,10 @@ cat1 <- function(dataf, nomfact, useNA = "no",
         # # ylabel
         # if (rfreq) {pt <- pt + ylab(label = "percent")}
         bar <- barchart(dataf, nomvar=nomfact, useNA = useNA, rfreq = rfreq,
-                             barwidth = sfdefault("discretebarwidth"),
-                             cfill = cfill, percentlabel = sfdefault("percentlabel") )
-
+                        barwidth = sfdefault("discretebarwidth"),
+                        cfill = cfill, 
+                        percentlabel = sfdefault("percentlabel") )
+        
         pie <- piechart(dataf, nomfact,
                              scaletitle = scaletitle,
                              dolabel = dolabel,
@@ -1065,9 +1238,12 @@ cat1 <- function(dataf, nomfact, useNA = "no",
                     varnames = c(nomfact = nomfact),
                     numcases = num,
                     levels = levels(dataf[[nomfact]]),
-                    tables = list(table = tbl, ptable = ptb), # ************* modif 1219
+                    tables = list(table = tbl, ptable = ptb), # ***** modif 1219
                     tests = list(chi2 = uchisq), # ************* modif 1219
-                    plots = list(plot = plot0, plot1 = plot1,plot2 = plot2, plot3 = plot3)
+                    plots = list(plot = plot0, 
+                                 plot1 = plot1,
+                                 plot2 = plot2, 
+                                 plot3 = plot3)
                    )
 }
 
@@ -1079,8 +1255,10 @@ cat1 <- function(dataf, nomfact, useNA = "no",
 #' --------------------------------------
 #'
 
-mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NULL,
-                   fill = sfdefault("filldefault"), colorannots = sfdefault("colorannots1"),
+mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, 
+                   valname = NULL,
+                   fill = sfdefault("filldefault"), 
+                   colorannots = sfdefault("colorannots1"),
                    rankscale = "log", # "normal", "inverse", "log"
                    ranksok= c(1, 5), # elimination des valeurs aberrantes 
                    maxrankgraph = 3 ) {
@@ -1113,7 +1291,8 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         for (i in 1: nrow(dataf)) {
                 for(j in 1:ncol(dataf)) {
                         if (!is.na(dataf[i, j])) {
-                                if( dataf[i, j] < min(ranksok) | dataf[i, j] > max(ranksok)) {
+                                if( dataf[i, j] < min(ranksok) | 
+                                    dataf[i, j] > max(ranksok)) {
                                         dataf[i, j] <- NA
                                 }
                         }
@@ -1145,10 +1324,14 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
                 mutate(percases = 100 * nbcit / ncases,
                        percit = 100 * nbcit / sum(nbcit))
         
-        restable$valnames <- vlookup(restable$variable, searchtable = corrtable,
-                                     searchcol = "variable", returncol = "valvect")
-        restable$shortname <- vlookup(restable$variable, searchtable = corrtable,
-                                      searchcol = "variable", returncol = "valshort")
+        restable$valnames <- vlookup(restable$variable, 
+                                     searchtable = corrtable,
+                                     searchcol = "variable", 
+                                     returncol = "valvect")
+        restable$shortname <- vlookup(restable$variable, 
+                                      searchtable = corrtable,
+                                      searchcol = "variable", 
+                                      returncol = "valshort")
         
         # b) citations by ranks ...........................................
         # Rem : NOT ideal, to be improved with tidy eval
@@ -1175,7 +1358,8 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         #         # citetable <- arrange(citetable, desc(nbcit0), desc(nbcit1))
         
         # better
-        citetable <- plyr::join_all(list(restable0, restable1, restable2, restable3),
+        citetable <- plyr::join_all(list(restable0, restable1, 
+                                         restable2, restable3),
                                     by = "variable")
         
         # 
@@ -1211,23 +1395,31 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         # )
         # 
         # 
-        # citetable <- plyr::join_all(list_table, by = "variable") # FAILS HERE*************
-        # # citetable <- plyr::join_all(list(restable0, restable1, restable2, restable3))
+        # citetable <- plyr::join_all(list_table, by = "variable") # FAILS HERE*
+        #                                                       ************
+        # # citetable <- plyr::join_all(list(restable0, 
+        #                                       restable1, 
+        #                                       restable2, 
+        #                                       restable3))
         
         
         
         
         # printable table and graphs preparation ...............................
         
-        utable <- select(restable, variable, nbcit, percases, percit, rangmed) #useful
+        utable <- select(restable, variable, nbcit, percases, percit, rangmed) 
+        # useful
         
         
-        lims <- restable$variable # to ensure both plots have the same category order
-        graphlabels <- as.character(restable$shortname) # short names, in the same order as lims !! as character !
-        names(graphlabels) <- lims # (to be sure and not to depend on order later)
-        
-        ptable <- select(restable, variable, nbcit, percases, percit, rangmed) #printable
-        colnames(ptable) <- c(valname, "citations", "%individus", "%citations", "rang median")
+        lims <- restable$variable # to ensure both plots have the same 
+                                  # category  order
+        graphlabels <- as.character(restable$shortname) 
+                # short names, in the same order as lims !! as character !
+        names(graphlabels) <- lims # (to be sure + not to depend on order later)
+        # printable
+        ptable <- select(restable, variable, nbcit, percases, percit, rangmed) 
+        colnames(ptable) <- c(valname, "citations", 
+                              "%individus", "%citations", "rang median")
         ptable[[1]] <- graphlabels
         
         
@@ -1296,24 +1488,28 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         
         
         # %citations, by ranks .................................................
-        # barchart faceted by rank  ----------------------------------------------------
-        
+        # barchart faceted by rank  --------------------------------------------
         
         # modif rangs
         # 
-        lresdf$rang <-factor(sapply(lresdf$value, 
-                                    function(x) {
-                                            ifelse(x < maxrankgraph, 
-                                                   yes = as.character(x), 
-                                                   no = paste0(as.character(maxrankgraph),"+" 
-                                                   ))}))
+        lresdf$rang <-
+                factor(sapply(
+                        lresdf$value, 
+                        function(x) {
+                                ifelse(x < maxrankgraph, 
+                                       yes = as.character(x), 
+                                       no = paste0(as.character(maxrankgraph),
+                                                   "+" 
+                                       ))}))
         
         lresdf [["variable"]] <- orderfact(lresdf, "variable")
         
         levels(lresdf [["variable"]])
         
-        graphlabs <- as.character(vlookup(levels(lresdf [["variable"]]), searchtable = corrtable,
-                                          searchcol = "variable", returncol = "valshort")) 
+        graphlabs <- as.character(vlookup(levels(lresdf [["variable"]]), 
+                                          searchtable = corrtable,
+                                          searchcol = "variable", 
+                                          returncol = "valshort")) 
         # short names, in the same order as lims !! as character !
         
         # facetnames
@@ -1322,24 +1518,28 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
         facetlabs  <-  c("Ensemble", paste("Rang =", rankvalues ))
         names(facetlabs) <- c("(all)", rankvalues)
         
-        # =================================================================================**************
+        # =======================================================**************
         # barplots with y = counts // proportions (generate both plots)
         
         bpbcount <- ggplot(lresdf, aes(variable, fill = rang))
         
         # proportion = y
-        bpbprop <- ggplot(lresdf, aes(variable, fill = rang, y = ..prop..,group = rang )) 
+        bpbprop <- ggplot(lresdf, aes(variable, fill = rang, 
+                                      y = ..prop..,group = rang )) 
         
         morebar <- function(p, titre = "citations", xscalename = NULL) {
-                p +
-                        geom_bar() +
-                        facet_grid(rang ~ ., margins = TRUE, switch = "y", labeller = labeller(rang = facetlabs)) +
+                p + geom_bar() +
+                        facet_grid(rang ~ ., margins = TRUE, switch = "y", 
+                                   labeller = labeller(rang = facetlabs)) +
                         labs(title = titre) + 
                         scale_x_discrete(xscalename,
                                          limits = levels(lresdf [["variable"]]),
                                          labels = graphlabs) +
-                        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.3),
-                              legend.position = "none", plot.title = element_text(hjust = 0.5))
+                        theme(axis.text.x = element_text(angle = 90, 
+                                                         hjust = 1, 
+                                                         vjust = 0.3),
+                              legend.position = "none", 
+                              plot.title = element_text(hjust = 0.5))
         }
         
         barfacetprop <- morebar(p = bpbprop)
@@ -1378,8 +1578,10 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
 
 
 # num1d <- function(dataf, nomvar, useNA ="no",
-#                   digits = sfdefault("digits"), sumdigits = sfdefault("sumdigits"),
-#                   rfreq = TRUE, width = sfdefault("discretebarwidth", 0.5), cfill = "steelblue") {
+#                   digits = sfdefault("digits"), 
+#                   sumdigits = sfdefault("sumdigits"),
+#                   rfreq = TRUE, width = sfdefault("discretebarwidth", 0.5), 
+#                   cfill = "steelblue") {
 #         # make a table (with Frequency = nb of rows)
 #         tb <- table(dataf[[nomvar]])
 #         num <- sum(tb)
@@ -1402,11 +1604,13 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
 # 
 #         # bar chart
 #         # # data+aes
-#         # if (useNA == "no") {dataf <- dataf[which(!is.na(dataf[[nomvar]])), ]}
+#         # if (useNA == "no") {
+#                      dataf <- dataf[which(!is.na(dataf[[nomvar]])), ]
+#         # }
 #         # if (rfreq) {
-#         #         pt <- ggplot( dataf,
-#         #                       aes_(as.name(nomvar),
-#         #                            quote(100 * ..count.. / sum(..count..))) )
+#         #         pt <- ggplot(dataf,
+#         #                      aes_(as.name(nomvar),
+#         #                      quote(100 * ..count.. / sum(..count..))) )
 #         # } else {
 #         #         pt <- ggplot( dataf,
 #         #                       aes_(as.name(nomvar)) )
@@ -1417,8 +1621,11 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
 #         # if (rfreq) {pt <- pt + ylab("percent")}
 #         bar <- barchart(dataf, nomvar, useNA = useNA, rfreq = rfreq,
 #                         barwidth = sfdefault("discretebarwidth"),
-#                         cfill = cfill, percentlabel = sfdefault("percentlabel") )
-#         boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + geom_boxplot() + coord_flip()
+#                         cfill = cfill, 
+#                         percentlabel = sfdefault("percentlabel") )
+#         boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + 
+#                       geom_boxplot() + 
+#                       coord_flip()
 # 
 #         # return values
 #         make.result(#name = nomvar,
@@ -1438,7 +1645,8 @@ mocat1 <- function(dataf, prefix, valvect = NULL, valshort = NULL, valname = NUL
 
 # new definition:
 num1d <- function(dataf, nomvar, useNA ="no",
-                  digits = sfdefault("digits"), sumdigits = sfdefault("sumdigits"),
+                  digits = sfdefault("digits"), 
+                  sumdigits = sfdefault("sumdigits"),
                   rfreq = TRUE, width = sfdefault("discretebarwidth", 0.5), 
                   cfill = "steelblue", rel_heights = c(2, 1)) {
         # make a table (with Frequency = nb of rows)
@@ -1478,8 +1686,11 @@ num1d <- function(dataf, nomvar, useNA ="no",
         # if (rfreq) {pt <- pt + ylab("percent")}
         barp <- barchart(dataf, nomvar, useNA = useNA, rfreq = rfreq,
                          barwidth = sfdefault("discretebarwidth"),
-                         cfill = cfill, percentlabel = sfdefault("percentlabel") )
-        boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + geom_boxplot() + coord_flip()
+                         cfill = cfill, 
+                         percentlabel = sfdefault("percentlabel") )
+        boxp <- ggplot(data = dataf, aes_(1, as.name(nomvar))) + 
+                geom_boxplot() + 
+                coord_flip()
         
         #common limits
         comlims <- comlimsbarbox(barp = barp, boxp = boxp)
@@ -1502,14 +1713,17 @@ num1d <- function(dataf, nomvar, useNA ="no",
                 # ************* modif 1219
                 tables = list(table = tbl,ptable = ptb),
                 tests = list(chi2 = uchisq),
-                plots = list(plot = cowplot::plot_grid(newbarp, newboxp, 
-                                                       ncol = 1, rel_heights = rel_heights,
-                                                       align = 'v', axis = 'b'),
-                             plot1 = barp,  # pt
-                             plot2 = boxp
+                plots = list(
+                        plot = cowplot::plot_grid(newbarp, newboxp, 
+                                                  ncol = 1, 
+                                                  rel_heights = rel_heights,
+                                                  align = 'v', axis = 'b'),
+                        plot1 = barp,  # pt
+                        plot2 = boxp
                 )
         )
 }
+
 
 
 
@@ -1543,16 +1757,20 @@ mkclabs <- function(breaks, sep = " - ", closed = NULL) {
 # Find common limits (histogram + Boxplot ) ------------------------------------
 comlimshistbox <- function(histp, boxp, safemargin = 0.05){
         # 1. make limits of both plots
-        tb <- ggplot_build(histp)$data[[1]][ , 1:8] # get freq table from histogram
-        hminmax <- c(min(tb[ ,"xmin"]),max(tb[ ,"xmax"]) ) #min-max of histogram bins
-        build_boxp <- ggplot_build(boxp) #get min-max of boxplot data
+            # get freq table from histogram
+        tb <- ggplot_build(histp)$data[[1]][ , 1:8] 
+        hminmax <- c(min(tb[ ,"xmin"]),max(tb[ ,"xmax"]) ) 
+            # min-max of histogram bins
+        build_boxp <- ggplot_build(boxp) 
+            #get min-max of boxplot data
         bminmax <- c(build_boxp$data[[1]][1,"ymin_final"], 
                      build_boxp$data[[1]][1,"ymax_final"])
         
         lmtp <- c(bminmax, hminmax) # mixed limits of plots
         halfrng <-  (max(lmtp) - min(lmtp)) / 2 # half range
         crng <- (max(lmtp) + min(lmtp)) / 2 # center of range
-        lmtp <- crng + c(-1, 1) * halfrng * (1 + safemargin) # new limits of both plots
+            # new limits of both plots
+        lmtp <- crng + c(-1, 1) * halfrng * (1 + safemargin) 
         
         # dbg
         # message(paste(round(lmtp[1], 0), round(lmtp[2], 0) ) )
@@ -1566,8 +1784,8 @@ comlimsbarbox <- function(barp, boxp, safemargin = 0.05){
         # 1. make limits of both plots
         tbfull <- ggplot_build(barp)$data[[1]]
         # tb <- tbfull[ , 1:8] # get freq table from barplot
-        
-        hminmax <- c(min(tbfull[ ,"xmin"]), max(tbfull[ ,"xmax"]) ) #min-max of barplot bars
+        # min-max of barplot bars
+        hminmax <- c(min(tbfull[ ,"xmin"]), max(tbfull[ ,"xmax"]) ) 
         
         build_boxp <- ggplot_build(boxp) #get min-max of boxplot data
         bminmax <- c(build_boxp$data[[1]][1,"ymin_final"], 
@@ -1576,7 +1794,8 @@ comlimsbarbox <- function(barp, boxp, safemargin = 0.05){
         lmtp <- c(bminmax, hminmax) # mixed limits of plots
         halfrng <-  (max(lmtp) - min(lmtp)) / 2 # half range
         crng <- (max(lmtp) + min(lmtp)) / 2 # center of range
-        lmtp <- crng + c(-1, 1) * halfrng * (1 + safemargin) # new limits of both plots
+        # new limits of both plots
+        lmtp <- crng + c(-1, 1) * halfrng * (1 + safemargin) 
         
         # dbg
         # message(paste(round(lmtp[1], 0), round(lmtp[2], 0) ) )
@@ -1591,12 +1810,15 @@ comlimsbarbox <- function(barp, boxp, safemargin = 0.05){
 
 # num1c(new)
 num1c <- function(dataf, nomvar, usedensity = FALSE, plot_density = FALSE,
-                  fillhist = sfdefault("filldefault"), color_density = "red", digits = 2, # ? modifier
+                  fillhist = sfdefault("filldefault"), 
+                  color_density = "red", digits = 2, # ? modifier
                   bins = "nclass.FD", closed = "left",
                   rel_heights = c(2, 1), safemargin = 0.05,
                   ...) {  # ... = addtl arguments for geom_hist
-        if (plot_density) {usedensity <- TRUE} # plot_density overrides usedensity
-        # bins = Null, integer, or a function name : "nclass.Sturges", "nclass.FD" , "nclass.scott"
+        # plot_density overrides usedensity
+        if (plot_density) {usedensity <- TRUE} 
+        # bins = Null, integer, or a function name : 
+        # "nclass.Sturges", "nclass.FD" , "nclass.scott"
         # get or compute bins (as integer)
         if (!is.null(bins)) {
                 if ("character" %in% class(bins) ) {
@@ -1607,7 +1829,8 @@ num1c <- function(dataf, nomvar, usedensity = FALSE, plot_density = FALSE,
         # make histogram (version 1)
         hp <- ggplot(dataf, aes_(as.name(nomvar))) +
                 if (usedensity) {geom_histogram(aes(y=..density..),
-                                                bins = bins, fill = fillhist,...)
+                                                bins = bins, 
+                                                fill = fillhist,...)
                 } else {geom_histogram(bins = bins, fill = fillhist, ...)}
         
         if (plot_density) {hp <- hp + geom_density(color=color_density) }
@@ -1695,7 +1918,8 @@ num1c <- function(dataf, nomvar, usedensity = FALSE, plot_density = FALSE,
                                    limits = comlims),
                      tests = list(chi2 = uchisq),
                      plots = list(plot = cowplot::plot_grid(newhp, newboxp, 
-                                               ncol = 1, rel_heights = rel_heights,
+                                               ncol = 1, 
+                                               rel_heights = rel_heights,
                                                align = 'v', axis = 'b'), 
                                   plot1 = hp,
                                   plot2 = newhp, # temporaire
@@ -1732,7 +1956,7 @@ cat2 <- function(dataf, nomfact1, nomfact2,  useNA = "no",
                                         ordervar2, orderval2, orderfun2, nlevel2)
         # nomfact1
         if(orderfreq1 == TRUE &
-           ordervar1 == nomfact2 & !is.na(orderval1)){ # fr?quences conditionnelles!
+           ordervar1 == nomfact2 & !is.na(orderval1)){ # frequences conditionnelles!
                 #print("Frequ cond")
                 tbl <- condfreqtable(dataf, nomfact1, nomfact2,  useNA = "no")
                 #print("apres Frequ cond table")
@@ -1742,7 +1966,7 @@ cat2 <- function(dataf, nomfact1, nomfact2,  useNA = "no",
                 tbl[[nomfact1]] <- orderfact(tbl, nomfact1,
                                              orderfreq1, orderdesc1,
                                              ordervar = "perc",
-                                             orderfun = orderfun1) #***************
+                                             orderfun = orderfun1) #************
                 dataf[[nomfact1]] <- orderfact(dataf, nomfact1,
                                                nlevels = levels(tbl[,nomfact1]))
         } else { # autres cas
@@ -1804,7 +2028,6 @@ cat2 <- function(dataf, nomfact1, nomfact2,  useNA = "no",
                 details = list(tbl=tbl,tbl2=tbl2),
                 tests = list(chi2 = ichisq),
                 plots = list(plot = pt)
-                
         )
 }
 
@@ -1814,12 +2037,11 @@ cat2 <- function(dataf, nomfact1, nomfact2,  useNA = "no",
 #' cat1num1 (cat1num1c, cat1num1d)
 #' -------------------------------------------------------------------------
 #
-# fonctions de d?termination du nombre de classes dabs un histogramme
+# fonctions de determination du nombre de classes dabs un histogramme
 # nclass.Sturges(mpg$hwy)
 # nclass.FD(mpg$hwy)
 # nclass.scott(mpg$hwy)
-#
-#
+
 
 
 #' ### fonctions de generation de graphiques
@@ -1831,7 +2053,8 @@ get.bins <- function(dataf, nomvar, bins) {
         if (!is.null(bins)) {
                 if ("character" %in% class(bins) ) {
                         bins <-  do.call(bins, list(nonavect(dataf[[nomvar]])))
-                } else if ("numeric" %in% class(bins) | "integer" %in% class(bins) ) {
+                } else if ("numeric" %in% class(bins) | 
+                           "integer" %in% class(bins) ) {
                 } else {
                         bins <- NULL
                         warning("bins is not a function", call. = TRUE)
@@ -1881,15 +2104,18 @@ class(bins)
 catnum1c <- function(dataf, nomfact, nomvar,  useNA = "no",
                      orderfreq = TRUE, orderdesc = TRUE, ordervar = "c..nt",
                      orderval = NA, orderfun = sum, nlevel =NULL,
-                     labellayer = "", labelall = "All values", labelgroups = "by goup",
+                     labellayer = "", labelall = "All values", 
+                     labelgroups = "by goup",
                      breaks = NULL, closed = NULL,
-                     rfreq = TRUE, digits = sfdefault("digits"), cfill = sfdefault("filldefault")){
+                     rfreq = TRUE, digits = sfdefault("digits"), 
+                     cfill = sfdefault("filldefault")){
         #ordering the factor if needed
         dataf[[nomfact]] <-  orderfact(dataf, nomfact, orderfreq, orderdesc,
                                         ordervar, orderval, orderfun, nlevel)
         # make a plot (box-jitter)
         pt1 <- cbyfboxjit(dataf, varf=nomfact, varc=nomvar, useNA = useNA,
-                         labellayer = labellayer, labelall = labelall, labelgroups = labelgroups)
+                         labellayer = labellayer, labelall = labelall, 
+                         labelgroups = labelgroups)
         # faceted histogram
         pt2 <- cbyffachistogram(dataf, varf=nomfact, varc=nomvar, useNA = useNA,
                                 usedensity = FALSE, usendensity = FALSE,
@@ -1936,7 +2162,7 @@ catnum1c <- function(dataf, nomfact, nomvar,  useNA = "no",
 }
 
 
-#' -----------------------------------------------------------------------------
+
 #' 
 #' 
 #' Fonctions d'affichage (simplifié) des résultats
@@ -1947,7 +2173,8 @@ catnum1c <- function(dataf, nomfact, nomvar,  useNA = "no",
 #' 
 
 # Markdown text to cat in R output: 
-# usage ==>  titletext("blabla", 3) returns "\n### blabla\n" , (newline necessary for markdown headers)
+# usage ==>  titletext("blabla", 3) returns "\n### blabla\n" , 
+# (newline necessary for markdown headers)
 #       ==>  titletext("blabla", 0) returns "blabla"
 titletext <- function(text, headerlevel = 0) {
         hs <- paste0(c( rep("#", times = headerlevel), " ") , collapse = "")
