@@ -2,13 +2,24 @@
 #'title: "Standard Functions for Basic Statistical Analysis"
 #'subtitle: R code in standardfunctions V40.R
 #'author: "Bruno Fischer Colonimos"
-#'date: "16 mars 2017 ===> 27 décembre 2019"
+#'date: "16 mars 2017 ===> 20 janvier 2020"
 #'abstract: |
 #'      This is the code of the standard functions v40.
 #'       Modifications: 
 #'       
 #'       * mocat1 modifiée (27 décembre 2019)
-#'      
+#'       * recode_order added (20 janvier 2020)
+#'
+#'# paramètre d'output
+#' #==================
+#' # paramètres généraux
+#' # -------------------
+#' documentclass: report
+#' # classoption: a4paper
+#' papersize: a4
+#' fontsize: 11pt
+#' geometry: "left=2.2cm,right=2.2cm,top=2.2cm,bottom=2.5cm,headheight=34pt,headsep=0.5cm,footskip=1cm"
+#' 
 #'output:
 #'  pdf_document:
 #'    toc: yes
@@ -557,13 +568,20 @@ orderfact <- function(dataf, nomfact, orderfreq = TRUE, orderdesc = TRUE,
         resfact
 }
 
+
+#'
+#' Preprocessing functions
+#'============================================================================
+#'
+
+
 #'
 #' Recoding factors
 #' ----------------------------------------------------------------------------
 #'
-#' ### Main function
+#' ### Main functions
 #' 
-library(dplyr) # necessary
+#' `library(dplyr)` is necessary
 
 # recode
 recode_order <- function(dtable, namefact, namenewfact, listrecode, 
@@ -608,8 +626,11 @@ recode_verif <- function(dataf, fname) {
 #'
 #' ### Helper function `recode_prep`
 #'
+#' The function prints a table of the factor, 
+#' and generates a template of the recoding functions call.
+#' (printed to the console). Copy / paste it and modify it before running.
 
-# generate + print tentative recode function call + verification code
+# Generate + print tentative recode function call + verification code
 recode_prep <- function(dataf, # must be the name (unquoted) of the dataframe
                         fname, newfname, 
                         min_percent = 0.03, min_label = "Other") {
